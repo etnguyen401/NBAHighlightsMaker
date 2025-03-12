@@ -91,15 +91,17 @@ def get_event_ids(game_id, player_id):
         print("Read event ids from file.")
         return event_ids
 
+def read_event_ids():
+    event_ids = pd.read_csv('event_ids.csv')
+    print("Read event ids from file.")
+    return event_ids
+
 #make another function to only get one link
 # so you can retry if it fails later
 def get_download_link(event_id, game_id):
     print("Getting download link: ")
     # get the download link
     
-        
-        
-
 def get_download_links(game_id, event_ids):
     # add another column to event_ids for the download link
     event_ids['VIDEO_LINK'] = ''
