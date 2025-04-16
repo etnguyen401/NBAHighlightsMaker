@@ -6,7 +6,7 @@ authors = [
     {name = "Your Name",email = "you@example.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.12, <4.0"
+requires-python = ">=3.12, <3.14"
 dependencies = [
     "selenium >= 4.28.1",
     "zendriver (>=0.4.3,<0.5.0)",
@@ -15,6 +15,7 @@ dependencies = [
     "pandas (>=2.2.3,<3.0.0)",
     "asyncio (>=3.4.3,<4.0.0)",
     "moviepy (>=2.1.2,<3.0.0)",
+    "pyside6 (>=6.8.2.1,<7.0.0.0)",
 ]
 
 

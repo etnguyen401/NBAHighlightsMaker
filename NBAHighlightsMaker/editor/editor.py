@@ -17,7 +17,7 @@ def get_clip_order(data_dir):
 def create_overlay(string):
     txt_clip = TextClip(font= './resources/Boldonse-Regular.ttf',
                                 text = string, 
-                                font_size = 50, 
+                                font_size = 20, 
                                 color = 'white', 
                                 text_align = 'center',
                                 duration = 3,
