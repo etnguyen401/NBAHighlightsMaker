@@ -56,13 +56,17 @@ class DataRetriever:
             print(player.iloc[0]['id'])
             time.sleep(1)
             return player.iloc[0]['id']
-            
-    def get_game_log(self, player_id, season = Season.default, season_type = SeasonType.regular):
+
+    def get_game_log(self, player_id, season = Season.default, season_type = SeasonType.regular):  
+        game_log = playergamelog.PlayerGameLog(player_id = player_id, season = season, season_type_all_star = season_type)
+        game_log = game_log.get_data_frames()[0]
+        return game_log
+    
+    def save_game_log(self, player_id, season = Season.default, season_type = SeasonType.regular):
         if not os.path.exists('game_log.csv'):
             game_log = playergamelog.PlayerGameLog(player_id = player_id, season = season, season_type_all_star = season_type)
             game_log = game_log.get_data_frames()[0]
             game_log.to_csv('game_log.csv', index = False)
-            time.sleep(1)
             return game_log
         else:
             #read as string so leading zeroes still there
