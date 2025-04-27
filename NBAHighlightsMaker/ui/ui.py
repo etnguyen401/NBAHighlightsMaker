@@ -12,7 +12,7 @@ class HighlightsUI(QMainWindow):
     def __init__(self, data_retriever):
         super().__init__()
         self.setWindowTitle("NBAHighlightsMaker")
-        self.setGeometry(100, 100, 520, 400)
+        self.setGeometry(300, 300, 540, 400)
 
         self.data_retriever = data_retriever
         

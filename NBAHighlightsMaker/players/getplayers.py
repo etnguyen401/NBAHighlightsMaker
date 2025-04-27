@@ -90,7 +90,6 @@ class DataRetriever:
             # filter to only get the event rows
             event_ids = event_ids['EVENTNUM']
             event_ids.to_csv('event_ids.csv', index = False)
-            time.sleep(1)
             print("Got from API and saved to csv.")
             return event_ids
         else:
