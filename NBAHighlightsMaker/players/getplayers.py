@@ -9,6 +9,9 @@ from nba_api.stats.endpoints import videoeventsasset
 import pandas as pd
 import requests
 import time 
+import asyncio
+from urllib3.util import Retry
+from requests.adapters import HTTPAdapter
 
 class DataRetriever:
     def __init__(self):
@@ -56,9 +59,10 @@ class DataRetriever:
             print(player.iloc[0]['id'])
             time.sleep(1)
             return player.iloc[0]['id']
-
+        
     def get_game_log(self, player_id, season = Season.default, season_type = SeasonType.regular):  
-        game_log = playergamelog.PlayerGameLog(player_id = player_id, season = season, season_type_all_star = season_type)
+        # change this later so user selects season and seasontype, also check for validity
+        game_log = playergamelog.PlayerGameLog(player_id = player_id, season = season, season_type_all_star = "Playoffs")
         game_log = game_log.get_data_frames()[0]
         return game_log
     
@@ -80,23 +84,34 @@ class DataRetriever:
         return game_log.iloc[0]['Game_ID']
 
     def get_event_ids(self, game_id, player_id):
-        if not os.path.exists('event_ids.csv'):
-            event_ids = playbyplayv2.PlayByPlayV2(game_id = game_id)
-            event_ids = event_ids.get_data_frames()[0]
-            # player2 id would be when something bad happens to player2
-            # select rows where player1 id is the player we want and video is available
-            # later provide an option for user to choose actions that they want (i.e field goals, assists, rebounds, blocks)
-            event_ids = event_ids.loc[((event_ids['PLAYER1_ID'] == player_id) | (event_ids['PLAYER2_ID'] == player_id)) & (event_ids['VIDEO_AVAILABLE_FLAG'] == 1)]
-            # filter to only get the event rows
-            event_ids = event_ids['EVENTNUM']
-            event_ids.to_csv('event_ids.csv', index = False)
-            print("Got from API and saved to csv.")
-            return event_ids
-        else:
-            # make sure to read event ids as strings so leading zeroes preserved
-            event_ids = pd.read_csv('event_ids.csv')
-            print("Read event ids from file.")
-            return event_ids
+        event_ids = playbyplayv2.PlayByPlayV2(game_id = game_id)
+        event_ids = event_ids.get_data_frames()[0]
+        # player2 id would be when something bad happens to player2
+        # select rows where player1 id is the player we want and video is available
+        # later provide an option for user to choose actions that they want (i.e field goals, assists, rebounds, blocks)
+        event_ids = event_ids.loc[((event_ids['PLAYER1_ID'] == player_id) | (event_ids['PLAYER2_ID'] == player_id)) & (event_ids['VIDEO_AVAILABLE_FLAG'] == 1)]
+        # filter to only get the event rows
+        event_ids = event_ids[['EVENTNUM']]
+        return event_ids
+        
+    # def get_event_ids(self, game_id, player_id):
+    #     if not os.path.exists('event_ids.csv'):
+    #         event_ids = playbyplayv2.PlayByPlayV2(game_id = game_id)
+    #         event_ids = event_ids.get_data_frames()[0]
+    #         # player2 id would be when something bad happens to player2
+    #         # select rows where player1 id is the player we want and video is available
+    #         # later provide an option for user to choose actions that they want (i.e field goals, assists, rebounds, blocks)
+    #         event_ids = event_ids.loc[((event_ids['PLAYER1_ID'] == player_id) | (event_ids['PLAYER2_ID'] == player_id)) & (event_ids['VIDEO_AVAILABLE_FLAG'] == 1)]
+    #         # filter to only get the event rows
+    #         event_ids = event_ids['EVENTNUM']
+    #         event_ids.to_csv('event_ids.csv', index = False)
+    #         print("Got from API and saved to csv.")
+    #         return event_ids
+    #     else:
+    #         # make sure to read event ids as strings so leading zeroes preserved
+    #         event_ids = pd.read_csv('event_ids.csv')
+    #         print("Read event ids from file.")
+    #         return event_ids
 
     def read_event_ids():
         event_ids = pd.read_csv('event_ids.csv')
@@ -109,20 +124,29 @@ class DataRetriever:
         print("Getting download link: ")
         # get the download link
         
-    def get_download_links(self, game_id, event_ids):
+    async def get_download_links(self, game_id, event_ids):
         # add another column to event_ids for the download link
         event_ids['VIDEO_LINK'] = ''
         event_ids['DESCRIPTION'] = ''
+        session = requests.Session()
+        session.headers.update(self.headers)
+        retry_settings = Retry(
+            total = 5,
+            backoff_factor = 0.5
+        )
+        adapter = HTTPAdapter(max_retries = retry_settings)
+        session.mount('https://', adapter)
         # for each event id
         for event_id in event_ids['EVENTNUM']:
             # get the download link and description
             #video_event = get_download_link(event_id, game_id)
             url = 'https://stats.nba.com/stats/videoeventsasset?GameEventID={}&GameID={}'.format(event_id, game_id)
             # randomize user agent
-            self.headers['User-Agent'] = random.choice(self.user_agents)
+            # self.headers['User-Agent'] = random.choice(self.user_agents)
+            session.headers.update({'User-Agent': random.choice(self.user_agents)})
             try:
                 print("Requesting for event id: ", event_id)
-                r = requests.get(url, headers = self.headers)
+                r = session.get(url, headers = self.headers, timeout = 10)
                 # check if request was successful
                 r.raise_for_status()
                 # convert to json
@@ -136,7 +160,7 @@ class DataRetriever:
                 event_ids.loc[event_ids['EVENTNUM'] == event_id, 'DESCRIPTION'] = video_event['desc']
                 # sleep
                 print("Sleeping...")
-                time.sleep(random.uniform(2.0, 4.0))
+                await asyncio.sleep(random.uniform(1.5, 3.0))
             except requests.exceptions.HTTPError as e:
                 print("HTTP error: ", e)
             except requests.exceptions.ConnectionError as e:
@@ -147,7 +171,9 @@ class DataRetriever:
                 print("Something else error: ", e)
         
         # update our file
-        event_ids.to_csv('event_ids.csv', index = False)
+        # event_ids.to_csv('event_ids.csv', index = False)
+        print("Download links added to dataframe.")
+        session.close()
         return event_ids
 
     def test():
