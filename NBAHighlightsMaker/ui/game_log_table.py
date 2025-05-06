@@ -15,13 +15,15 @@ class GameLogTable(QWidget):
         self.data_retriever = data_retriever
         self.downloader = Downloader()
         self.video_maker = VideoMaker()
-        self.curr_game_log = None
 
+        self.curr_game_log = None
         self.player_id = None
         self.game_id = None
 
         self.get_links_task = None
         self.download_task = None
+        self.edit_task = None
+
         self.layout = QVBoxLayout(self)
 
         self.table_widget = QTableWidget()
@@ -72,6 +74,11 @@ class GameLogTable(QWidget):
             self.download_task.cancel()
             self.download_task = None
             print("Downloading cancelled.")
+        
+        if self.edit_task:
+            self.edit_task.cancel()
+            self.edit_task = None
+            print("Creating video cancelled.")
         self.cancel_button.setEnabled(False)
         
     async def handle_create_vid_click(self):
