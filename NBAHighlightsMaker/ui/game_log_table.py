@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QVBoxLayout, QPushButton, QTableWidget, QWidget, QTableWidgetItem
+from PySide6.QtWidgets import QVBoxLayout, QPushButton, QTableWidget, QWidget, QTableWidgetItem, QMessageBox
 from NBAHighlightsMaker.downloader.downloader import Downloader
 from NBAHighlightsMaker.editor.editor import VideoMaker
 import os
@@ -151,6 +151,7 @@ class GameLogTable(QWidget):
         self.curr_game_log = self.data_retriever.get_game_log(player_id, season, season_type)[['GAME_DATE', 'WL', 'MIN', 'MATCHUP', 'Game_ID', 'PTS', 'REB', 'AST', 'STL', 'BLK']]
         if self.curr_game_log.empty:
             print("No game log found for player.")
+            QMessageBox.critical(self, "Error: No Game Log Found", "No game log found for player, please try another player/season/season type combination.")
             return
         self.player_id = player_id
         # set number of rows and columns
