@@ -12,29 +12,29 @@ class HighlightsUI(QMainWindow):
     def __init__(self, data_retriever):
         super().__init__()
         self.setWindowTitle("NBAHighlightsMaker")
-        self.setGeometry(300, 300, 540, 400)
+        self.setGeometry(300, 300, 540, 500)
 
         self.data_retriever = data_retriever
         
         # set to vertical box layout
         self.layout = QVBoxLayout()
 
-        # create player search box
-        self.search_box = PlayerSearchBox(self.data_retriever)
+        # create player search widget
+        self.player_search_widget = PlayerSearchBox(self.data_retriever)
         # make search box label
         player_search_label = QLabel("Search for a Player:")
-        player_search_label.setBuddy(self.search_box)
+        player_search_label.setBuddy(self.player_search_widget)
         
         # make table widget
         self.table_widget = GameLogTable(self.data_retriever)
         game_log_label = QLabel("Game Log:")
         game_log_label.setBuddy(self.table_widget)
 
-        self.search_box.player_selected.connect(self.table_widget.update_table)
+        self.player_search_widget.info_given.connect(self.table_widget.update_table)
 
         # layout order:
         self.layout.addWidget(player_search_label)
-        self.layout.addWidget(self.search_box)
+        self.layout.addWidget(self.player_search_widget)
         self.layout.addWidget(game_log_label)
         self.layout.addWidget(self.table_widget)
 

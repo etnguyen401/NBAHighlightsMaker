@@ -47,6 +47,18 @@ class DataRetriever:
             print('Active Players data already exists.')
             return active_players
 
+    def get_all_players(self):
+        if not os.path.exists('players.csv'):
+            nba_players = players.get_players()
+            df = pd.DataFrame(nba_players)
+            df.to_csv('players.csv', index = False)
+            print('All Players data created.')
+            return df
+        else:
+            all_players = pd.read_csv('players.csv')
+            print('All Players data already exists.')
+            return all_players
+    
     def get_player_id(self, full_name):
         if not os.path.exists('players.csv'):
             players = self.get_active_players()
@@ -62,8 +74,9 @@ class DataRetriever:
         
     def get_game_log(self, player_id, season = Season.default, season_type = SeasonType.regular):  
         # change this later so user selects season and seasontype, also check for validity
-        game_log = playergamelog.PlayerGameLog(player_id = player_id, season = season, season_type_all_star = "Playoffs")
+        game_log = playergamelog.PlayerGameLog(player_id = player_id, season = season, season_type_all_star = season_type)
         game_log = game_log.get_data_frames()[0]
+        # CHECK IF VIDEO IS AVAILABLE LATER
         return game_log
     
     def save_game_log(self, player_id, season = Season.default, season_type = SeasonType.regular):

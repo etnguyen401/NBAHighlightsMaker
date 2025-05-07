@@ -144,9 +144,14 @@ class GameLogTable(QWidget):
         self.cancel_button.setEnabled(False)
 
     # fetch game log, fill table with it
-    def update_table(self, player_id):
+    def update_table(self, player_id, season, season_type):
+        #clear table
+        #self.table_widget.clear()
         # get game log for player
-        self.curr_game_log = self.data_retriever.get_game_log(player_id)[['GAME_DATE', 'WL', 'MIN', 'MATCHUP', 'Game_ID', 'PTS', 'REB', 'AST', 'STL', 'BLK']]
+        self.curr_game_log = self.data_retriever.get_game_log(player_id, season, season_type)[['GAME_DATE', 'WL', 'MIN', 'MATCHUP', 'Game_ID', 'PTS', 'REB', 'AST', 'STL', 'BLK']]
+        if self.curr_game_log.empty:
+            print("No game log found for player.")
+            return
         self.player_id = player_id
         # set number of rows and columns
         self.table_widget.setRowCount(len(self.curr_game_log))
