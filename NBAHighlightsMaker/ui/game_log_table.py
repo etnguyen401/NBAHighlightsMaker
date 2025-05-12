@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QVBoxLayout, QPushButton, QTableWidget, QWidget, QTableWidgetItem, QMessageBox
+from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QCheckBox, QPushButton, QTableWidget, QWidget, QTableWidgetItem, QMessageBox
 from NBAHighlightsMaker.downloader.downloader import Downloader
 from NBAHighlightsMaker.editor.editor import VideoMaker
 import os
@@ -51,8 +51,49 @@ class GameLogTable(QWidget):
         self.cancel_button.setEnabled(False)
         self.cancel_button.clicked.connect(self.handle_cancel_click)
 
+        # select all button
+        self.select_all_button = QCheckBox("Select All")
+        self.select_all_button.setChecked(True)
+        self.select_all_button.clicked.connect(self.handle_select_all_click)
+
+        #make checkboxes
+        self.layout_checkboxes = QHBoxLayout()
+        self.fg_made_box = QCheckBox("FG Made")
+        self.assists_box = QCheckBox("Assists")
+        self.fg_missed_box = QCheckBox("FG Missed")
+        self.fta_box = QCheckBox("Free Throw Attempts")
+        self.rebound_box = QCheckBox("Rebounds")
+        self.foul_box = QCheckBox("Fouls (Committed + Drawn)")
+        self.turnover_box = QCheckBox("Turnovers")
+        self.steal_box = QCheckBox("Steals")
+        self.block_box = QCheckBox("Blocks")
+
+        #enable all
+        self.fg_made_box.setChecked(True)
+        self.assists_box.setChecked(True)
+        self.fg_missed_box.setChecked(True)
+        self.fta_box.setChecked(True)
+        self.rebound_box.setChecked(True)
+        self.foul_box.setChecked(True)
+        self.turnover_box.setChecked(True)
+        self.steal_box.setChecked(True)
+        self.block_box.setChecked(True)
+
+        #add checkboxes to horizontal layout
+        self.layout_checkboxes.addWidget(self.fg_made_box)
+        self.layout_checkboxes.addWidget(self.fg_missed_box)
+        self.layout_checkboxes.addWidget(self.assists_box)
+        self.layout_checkboxes.addWidget(self.fta_box)
+        self.layout_checkboxes.addWidget(self.rebound_box)
+        self.layout_checkboxes.addWidget(self.foul_box)
+        self.layout_checkboxes.addWidget(self.turnover_box)
+        self.layout_checkboxes.addWidget(self.steal_box)
+        self.layout_checkboxes.addWidget(self.block_box)
+        
         #add objects to layout
         self.layout.addWidget(self.table_widget)
+        self.layout.addWidget(self.select_all_button)
+        self.layout.addLayout(self.layout_checkboxes)
         self.layout.addWidget(self.create_video_button)
         self.layout.addWidget(self.cancel_button)
 
@@ -80,20 +121,67 @@ class GameLogTable(QWidget):
             self.edit_task = None
             print("Creating video cancelled.")
         self.cancel_button.setEnabled(False)
-        
+    
+    def handle_select_all_click(self):
+        # if it's checked, and the user clicks it, uncheck all  
+        checked = self.select_all_button.isChecked()
+        self.fg_made_box.setChecked(checked)
+        self.assists_box.setChecked(checked)
+        self.fg_missed_box.setChecked(checked)
+        self.fta_box.setChecked(checked)
+        self.rebound_box.setChecked(checked)
+        self.foul_box.setChecked(checked)
+        self.turnover_box.setChecked(checked)
+        self.steal_box.setChecked(checked)
+        self.block_box.setChecked(checked)
+    
     async def handle_create_vid_click(self):
-        print("Player ID:", self.player_id)
-        print("Game ID:", self.game_id)
+        # print("Player ID:", self.player_id)
+        # print("Game ID:", self.game_id)
         # delete data folder if it exists
+
         if os.path.exists(data_dir):
             shutil.rmtree(data_dir)
         # create/recreate data folder
         os.makedirs(data_dir)
         
+        # make a set to store the boxes checked
+        boxes_checked = set()
+        # check which boxes are checked
+        if self.fg_made_box.isChecked() or self.assists_box.isChecked():
+            boxes_checked.add(1)
+        if self.fg_missed_box.isChecked() or self.block_box.isChecked():
+            boxes_checked.add(2)
+        if self.fta_box.isChecked():
+            boxes_checked.add(3)
+        if self.rebound_box.isChecked():
+            boxes_checked.add(4)
+        if self.turnover_box.isChecked() or self.steal_box.isChecked():
+            boxes_checked.add(5)
+        if self.foul_box.isChecked():
+            boxes_checked.add(6)
+        
         # call get events id
-        event_ids = self.data_retriever.get_event_ids(self.game_id, self.player_id)
-        print(event_ids.head()) 
+        # get all event ids relating to the player
+        event_ids = self.data_retriever.get_event_ids(self.game_id, self.player_id, boxes_checked)
+        
+        
+
+        #already got event ids, that were filtered by boxes checked relating to the player
+
+        # check if assists, steals, blocks are checked
+        # if fgm_box is checked, assists already included
+        # else if fgm_box wasn't checked and asists was, filter event ids that are fgm and only get the rows
+        # that have player2id = player_id
+        if self.assists_box.isChecked() and not self.fg_made_box.isChecked():
+            event_ids = event_ids.loc[((event_ids['EVENTMSGTYPE'] == 1) & (event_ids['PLAYER2_ID'] == self.player_id)) | (event_ids['EVENTMSGTYPE'] != 1)]
+        if self.steal_box.isChecked() and not self.turnover_box.isChecked():
+            event_ids = event_ids.loc[((event_ids['EVENTMSGTYPE'] == 5) & (event_ids['PLAYER2_ID'] == self.player_id)) | (event_ids['EVENTMSGTYPE'] != 5)]
+        if self.block_box.isChecked() and not self.fg_missed_box.isChecked():
+            event_ids = event_ids.loc[((event_ids['EVENTMSGTYPE'] == 2) & (event_ids['PLAYER3_ID'] == self.player_id)) | (event_ids['EVENTMSGTYPE'] != 2)]
+
         # make async io task, get download links
+        # event_ids.to_csv('test.csv', index = False)
         self.get_links_task = asyncio.create_task(self.data_retriever.get_download_links(self.game_id, event_ids))
         # save the event_ids returned from the task
         try:
@@ -145,13 +233,11 @@ class GameLogTable(QWidget):
 
     # fetch game log, fill table with it
     def update_table(self, player_id, season, season_type):
-        #clear table
-        #self.table_widget.clear()
         # get game log for player
-        self.curr_game_log = self.data_retriever.get_game_log(player_id, season, season_type)[['GAME_DATE', 'WL', 'MIN', 'MATCHUP', 'Game_ID', 'PTS', 'REB', 'AST', 'STL', 'BLK']]
+        self.curr_game_log = self.data_retriever.get_game_log(player_id, season, season_type)[['GAME_DATE', 'WL', 'MIN', 'MATCHUP', 'Game_ID', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PF']]
         if self.curr_game_log.empty:
             print("No game log found for player.")
-            QMessageBox.critical(self, "Error: No Game Log Found", "No game log found for player, please try another player/season/season type combination.")
+            QMessageBox.critical(self, "Error: No Game Log Found", "No game log found for combination selected, please try another player/season/season type combination.")
             return
         self.player_id = player_id
         # set number of rows and columns
@@ -160,6 +246,9 @@ class GameLogTable(QWidget):
 
         # set column headers
         self.table_widget.setHorizontalHeaderLabels(self.curr_game_log.columns)
+
+        #reset scroll bar position
+        self.table_widget.verticalScrollBar().setValue(0)
 
         #iterate over each row, get both row index and row data
         for i, row in self.curr_game_log.iterrows():

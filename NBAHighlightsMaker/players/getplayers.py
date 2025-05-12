@@ -76,7 +76,14 @@ class DataRetriever:
         # change this later so user selects season and seasontype, also check for validity
         game_log = playergamelog.PlayerGameLog(player_id = player_id, season = season, season_type_all_star = season_type)
         game_log = game_log.get_data_frames()[0]
-        # CHECK IF VIDEO IS AVAILABLE LATER
+        
+        # MAYBE DISPLAY ALL GAMES AND MAKE ERROR MESSAGE IN FUTURE
+        game_log = game_log.loc[game_log['VIDEO_AVAILABLE'] == 1]
+        # need to reset index after filtering, as pandas preserves old index
+        # set drop = true so old index not put as column
+        game_log = game_log.reset_index(drop = True)
+        # print("Row count after: ", len(game_log))
+        # game_log.to_csv('test.csv', index = False)
         return game_log
     
     def save_game_log(self, player_id, season = Season.default, season_type = SeasonType.regular):
@@ -96,15 +103,17 @@ class DataRetriever:
     def get_game_id(game_log):
         return game_log.iloc[0]['Game_ID']
 
-    def get_event_ids(self, game_id, player_id):
+    def get_event_ids(self, game_id, player_id, boxes_checked):
         event_ids = playbyplayv2.PlayByPlayV2(game_id = game_id)
         event_ids = event_ids.get_data_frames()[0]
         # player2 id would be when something bad happens to player2
         # select rows where player1 id is the player we want and video is available
         # later provide an option for user to choose actions that they want (i.e field goals, assists, rebounds, blocks)
-        event_ids = event_ids.loc[((event_ids['PLAYER1_ID'] == player_id) | (event_ids['PLAYER2_ID'] == player_id)) & (event_ids['VIDEO_AVAILABLE_FLAG'] == 1)]
-        # filter to only get the event rows
-        event_ids = event_ids[['EVENTNUM']]
+        event_ids = event_ids.loc[((event_ids['PLAYER1_ID'] == player_id) | (event_ids['PLAYER2_ID'] == player_id) | (event_ids['PLAYER3_ID'] == player_id)) & (event_ids['VIDEO_AVAILABLE_FLAG'] == 1)]
+        # filter to only get the rows needed
+        event_ids = event_ids.loc[event_ids['EVENTMSGTYPE'].isin(boxes_checked)]
+        #event_ids = event_ids[event_ids['EVENTMSGTYPE'].isin(boxes_checked)]
+        #event_ids = event_ids[['EVENTNUM']]
         return event_ids
         
     # def get_event_ids(self, game_id, player_id):
