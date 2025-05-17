@@ -1,10 +1,9 @@
-import sys
+#import sys
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QLineEdit, QLabel, QWidget, QCompleter, QComboBox, QTableWidget, QTableWidgetItem
-)
-from PySide6.QtCore import Qt, QStringListModel
-import pandas as pd
-from NBAHighlightsMaker.players.getplayers import DataRetriever
+    QMainWindow, QVBoxLayout, QLabel, QWidget)
+#from PySide6.QtCore import Qt, QStringListModel
+#import pandas as pd 
+#from NBAHighlightsMaker.players.getplayers import DataRetriever
 from NBAHighlightsMaker.ui.player_search import PlayerSearchBox
 from NBAHighlightsMaker.ui.game_log_table import GameLogTable
 
@@ -43,8 +42,8 @@ class HighlightsUI(QMainWindow):
         container.setLayout(self.layout)
         self.setCentralWidget(container)
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = HighlightsUI()
-    window.show()
-    sys.exit(app.exec())
+# if __name__ == "__main__":
+#     app = QApplication(sys.argv)
+#     window = HighlightsUI()
+#     window.show()
+#     sys.exit(app.exec())

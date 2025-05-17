@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QComboBox, QCompleter, QWidget, QVBoxLayout, QPushButton
 from PySide6.QtCore import QStringListModel, Qt, Signal
-from NBAHighlightsMaker.players.getplayers import DataRetriever
+#from NBAHighlightsMaker.players.getplayers import DataRetriever
 
 class PlayerSearchBox(QWidget):
     # make signal to emit player id when item selected
@@ -14,7 +14,7 @@ class PlayerSearchBox(QWidget):
         self.data_retriever = data_retriever
 
         # get players and fill box with them
-        self.players = self.data_retriever.get_active_players()
+        self.players = self.data_retriever.get_all_players()
         self.update_search_box()
 
         # add completer for autocomplete

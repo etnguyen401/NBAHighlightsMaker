@@ -5,7 +5,7 @@ from nba_api.stats.library.parameters import Season
 from nba_api.stats.library.parameters import SeasonType
 from nba_api.stats.endpoints import playergamelog
 from nba_api.stats.endpoints import playbyplayv2
-from nba_api.stats.endpoints import videoeventsasset
+#from nba_api.stats.endpoints import videoeventsasset
 import pandas as pd
 import requests
 import time 
@@ -33,8 +33,6 @@ class DataRetriever:
         ]
         
     def get_active_players(self):
-        """Get all players from the NBA, filter to only active players, 
-        save data to CSV and return the active players."""
         if not os.path.exists('players.csv'):
             nba_players = players.get_players()
             df = pd.DataFrame(nba_players)
@@ -48,14 +46,14 @@ class DataRetriever:
             return active_players
 
     def get_all_players(self):
-        if not os.path.exists('players.csv'):
+        if not os.path.exists('players_all.csv'):
             nba_players = players.get_players()
             df = pd.DataFrame(nba_players)
-            df.to_csv('players.csv', index = False)
+            df.to_csv('players_all.csv', index = False)
             print('All Players data created.')
             return df
         else:
-            all_players = pd.read_csv('players.csv')
+            all_players = pd.read_csv('players_all.csv')
             print('All Players data already exists.')
             return all_players
     
@@ -146,7 +144,7 @@ class DataRetriever:
         print("Getting download link: ")
         # get the download link
         
-    async def get_download_links(self, game_id, event_ids):
+    async def get_download_links(self, game_id, event_ids, update_progress_bar):
         # add another column to event_ids for the download link
         event_ids['VIDEO_LINK'] = ''
         event_ids['DESCRIPTION'] = ''
@@ -159,7 +157,7 @@ class DataRetriever:
         adapter = HTTPAdapter(max_retries = retry_settings)
         session.mount('https://', adapter)
         # for each event id
-        for event_id in event_ids['EVENTNUM']:
+        for index, event_id in enumerate(event_ids['EVENTNUM']):
             # get the download link and description
             #video_event = get_download_link(event_id, game_id)
             url = 'https://stats.nba.com/stats/videoeventsasset?GameEventID={}&GameID={}'.format(event_id, game_id)
@@ -181,6 +179,8 @@ class DataRetriever:
                 event_ids.loc[event_ids['EVENTNUM'] == event_id, 'VIDEO_LINK'] = video_event['video']
                 event_ids.loc[event_ids['EVENTNUM'] == event_id, 'DESCRIPTION'] = video_event['desc']
                 # sleep
+                value = int((index + 1) / len(event_ids) * 100)
+                update_progress_bar(value, "Get link for: {}".format(video_event['desc']))
                 print("Sleeping...")
                 await asyncio.sleep(random.uniform(1.5, 3.0))
             except requests.exceptions.HTTPError as e:
@@ -205,13 +205,13 @@ class DataRetriever:
 
 def main():
     nba_data_retriever = DataRetriever()
-    active_players = nba_data_retriever.get_active_players()
-    player_id = nba_data_retriever.get_player_id('Kevin Durant')
-    game_log = nba_data_retriever.get_game_log(player_id)
-    game_id = nba_data_retriever.get_game_id(game_log)
-    print("Game ID: ", game_id)
-    event_ids = nba_data_retriever.get_event_ids(game_id, player_id)
-    dl_links = nba_data_retriever.get_download_links(game_id, event_ids)
+    active_players = nba_data_retriever.get_all_players()
+    # player_id = nba_data_retriever.get_player_id('Kevin Durant')
+    # game_log = nba_data_retriever.get_game_log(player_id)
+    # game_id = nba_data_retriever.get_game_id(game_log)
+    # print("Game ID: ", game_id)
+    # event_ids = nba_data_retriever.get_event_ids(game_id, player_id)
+    # dl_links = nba_data_retriever.get_download_links(game_id, event_ids)
     
 if __name__ == '__main__':
     # test()

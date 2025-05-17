@@ -4,7 +4,7 @@ import os
 #use zendriver to act more like a human
 import asyncio
 import random
-import time
+#import time
 import zendriver as zd
 # from NBAHighlightsMaker.players.getplayers import read_event_ids
 
@@ -17,9 +17,10 @@ class Downloader():
         self.data_dir = os.path.join(os.getcwd(), 'data', 'vids')
         os.makedirs(self.data_dir, exist_ok=True)
 
-    async def download_links(self, event_ids):
+    async def download_links(self, event_ids, update_progress_bar):
         # make new column in event ids to store file path
         event_ids['FILE_PATH'] = ''
+        event_ids = event_ids.reset_index(drop=True)
         for index, row in event_ids.iterrows():
             desc = row['DESCRIPTION']
             dl_link = row['VIDEO_LINK']    
@@ -40,7 +41,11 @@ class Downloader():
             # for better names)
             await tab.download_file(dl_link, "{}.mp4".format(event_num))
             #sleep for random time
-            print("Sleeping after download of {}.mp4...".format(desc))
+            value = int((index + 1) / len(event_ids) * 100)
+            print("Index: {}, length: {}".format(index, len(event_ids)))
+            print(value)
+            update_progress_bar(value, "Downloading: {}".format(desc))
+            print("Sleeping after download of {}.mp4...".format(event_num))
             await asyncio.sleep(random.uniform(1.5, 2.5))
             event_ids.loc[index, 'FILE_PATH'] = os.path.join(self.data_dir, "{}.mp4".format(event_num))
             await browser.stop()

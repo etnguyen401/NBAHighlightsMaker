@@ -670,14 +670,14 @@ xmp = ["defusedxml"]
 
 [[package]]
 name = "proglog"
-version = "0.1.11"
+version = "0.1.12"
 description = "Log and progress bar manager for console, notebooks, web..."
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "proglog-0.1.11-py3-none-any.whl", hash = "sha256:1729b829e1e609a3f340d6659fbde401cace9e2feab65647ceaf52ecfccf362d"},
-    {file = "proglog-0.1.11.tar.gz", hash = "sha256:ce35a0f9d1153e69d0063cdae6e6f2d8708fa0a588fc4e089501b77005e72884"},
+    {file = "proglog-0.1.12-py3-none-any.whl", hash = "sha256:ccaafce51e80a81c65dc907a460c07ccb8ec1f78dc660cfd8f9ec3a22f01b84c"},
+    {file = "proglog-0.1.12.tar.gz", hash = "sha256:361ee074721c277b89b75c061336cb8c5f287c92b043efa562ccf7866cda931c"},
 ]
 
 [package.dependencies]
@@ -1218,4 +1218,4 @@ websockets = ">=14.0"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12, <3.14"
-content-hash = "cad8b6fc39205838513c7b7a986a271d2fb67ecb450734b4336c36002d36fdc5"
+content-hash = "8259c4a748ea785dc2b12b4ae1ebefe5cfd6bde8e4e244ccc80181d2ac18d4ec"

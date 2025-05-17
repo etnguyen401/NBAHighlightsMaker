@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QCheckBox, QPushButton, QTableWidget, QWidget, QTableWidgetItem, QMessageBox
+from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QCheckBox, QPushButton, QTableWidget, QWidget, QTableWidgetItem, QMessageBox
 from NBAHighlightsMaker.downloader.downloader import Downloader
 from NBAHighlightsMaker.editor.editor import VideoMaker
 import os
@@ -36,20 +36,6 @@ class GameLogTable(QWidget):
         
         # enable button if row is selected
         self.table_widget.itemSelectionChanged.connect(self.handle_row_selection)
-        
-        #make create video button
-        self.create_video_button = QPushButton("Create Video")
-        self.create_video_button.setEnabled(False)
-        self.create_video_button.setToolTip("Select a row to choose what game you want to make highlights of to enable this button.")
-        # when button clicked, get game id and player id and begin download + edit
-        self.create_video_button.clicked.connect(
-            lambda: asyncio.create_task(self.handle_create_vid_click())
-        )
-
-        #make cancel button
-        self.cancel_button = QPushButton("Cancel")
-        self.cancel_button.setEnabled(False)
-        self.cancel_button.clicked.connect(self.handle_cancel_click)
 
         # select all button
         self.select_all_button = QCheckBox("Select All")
@@ -79,6 +65,30 @@ class GameLogTable(QWidget):
         self.steal_box.setChecked(True)
         self.block_box.setChecked(True)
 
+        #make create video button
+        self.create_video_button = QPushButton("Create Video")
+        self.create_video_button.setEnabled(False)
+        self.create_video_button.setToolTip("Select a row to choose what game you want to make highlights of to enable this button.")
+        # when button clicked, get game id and player id and begin download + edit
+        self.create_video_button.clicked.connect(
+            lambda: asyncio.create_task(self.handle_create_vid_click())
+        )
+
+        #make cancel button
+        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button.setEnabled(False)
+        self.cancel_button.clicked.connect(self.handle_cancel_click)
+
+        #make progress bar and label
+        self.progress_bar_label = QLabel("")
+        self.progress_bar_label.setVisible(False)
+        self.progress_bar = QProgressBar(self)
+        #segmented?
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setVisible(False)
+        
+
         #add checkboxes to horizontal layout
         self.layout_checkboxes.addWidget(self.fg_made_box)
         self.layout_checkboxes.addWidget(self.fg_missed_box)
@@ -94,8 +104,14 @@ class GameLogTable(QWidget):
         self.layout.addWidget(self.table_widget)
         self.layout.addWidget(self.select_all_button)
         self.layout.addLayout(self.layout_checkboxes)
+        self.layout.addWidget(self.progress_bar_label)
+        self.layout.addWidget(self.progress_bar)
         self.layout.addWidget(self.create_video_button)
         self.layout.addWidget(self.cancel_button)
+
+    def update_progress_bar(self, value, description):
+        self.progress_bar.setValue(value)
+        self.progress_bar_label.setText(description)
 
     def handle_row_selection(self):
         selected_items = self.table_widget.selectedItems()
@@ -120,7 +136,13 @@ class GameLogTable(QWidget):
             self.edit_task.cancel()
             self.edit_task = None
             print("Creating video cancelled.")
+        
+        self.create_video_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
+        self.cancel_button.setText("Cancel")
+        self.progress_bar.setVisible(False)
+        self.progress_bar_label.setText("")
+        self.progress_bar.setValue(0)
     
     def handle_select_all_click(self):
         # if it's checked, and the user clicks it, uncheck all  
@@ -145,6 +167,7 @@ class GameLogTable(QWidget):
         # create/recreate data folder
         os.makedirs(data_dir)
         
+        self.create_video_button.setEnabled(False)
         # make a set to store the boxes checked
         boxes_checked = set()
         # check which boxes are checked
@@ -165,8 +188,10 @@ class GameLogTable(QWidget):
         # get all event ids relating to the player
         event_ids = self.data_retriever.get_event_ids(self.game_id, self.player_id, boxes_checked)
         
-        
 
+        self.progress_bar_label.setVisible(True)
+        self.progress_bar.setVisible(True)
+        
         #already got event ids, that were filtered by boxes checked relating to the player
 
         # check if assists, steals, blocks are checked
@@ -182,7 +207,7 @@ class GameLogTable(QWidget):
 
         # make async io task, get download links
         # event_ids.to_csv('test.csv', index = False)
-        self.get_links_task = asyncio.create_task(self.data_retriever.get_download_links(self.game_id, event_ids))
+        self.get_links_task = asyncio.create_task(self.data_retriever.get_download_links(self.game_id, event_ids, self.update_progress_bar))
         # save the event_ids returned from the task
         try:
             self.cancel_button.setText("Cancel Getting Links")
@@ -194,11 +219,13 @@ class GameLogTable(QWidget):
             # the only thing that changed was the event_ids, but
             # when the user clicks create video again, event_ids will
             # be new anyways
+            return
         except Exception as e:
             print(f"An error occurred: {e}")
         
+        self.update_progress_bar(0, "")
         # call download_links to download all the vids
-        self.download_task = asyncio.create_task(self.downloader.download_links(event_ids))
+        self.download_task = asyncio.create_task(self.downloader.download_links(event_ids, self.update_progress_bar))
         try:
             self.cancel_button.setText("Cancel Getting Downloads")
             self.cancel_button.setEnabled(True)
@@ -211,11 +238,13 @@ class GameLogTable(QWidget):
                 shutil.rmtree(data_dir)
             # create/recreate data folder
             os.makedirs(data_dir)
+            return
         except Exception as e:
             print(f"An error occurred: {e}")
 
+        self.update_progress_bar(0, "")
         # edit the videos together
-        self.edit_task = asyncio.create_task(self.video_maker.make_final_vid(event_ids['FILE_PATH'].tolist()))
+        self.edit_task = asyncio.create_task(self.video_maker.make_final_vid(event_ids['FILE_PATH'].tolist(), self.update_progress_bar))
         try:
             self.cancel_button.setText("Cancel Creating Video")
             self.cancel_button.setEnabled(True)
@@ -226,10 +255,13 @@ class GameLogTable(QWidget):
             # CHANGE LATER TO ACCOUNT FOR USER SPECIFIED PATH
             if os.path.exists(os.path.join(data_dir, "final_vid.mp4")):
                 os.remove(os.path.join(data_dir, "final_vid.mp4"))
+            return
         except Exception as e:
             print(f"An error occurred: {e}")
         
+        QMessageBox.information(self, "Success", "Video created successfully!")
         self.cancel_button.setEnabled(False)
+        self.cancel_button.setText("Cancel")
 
     # fetch game log, fill table with it
     def update_table(self, player_id, season, season_type):

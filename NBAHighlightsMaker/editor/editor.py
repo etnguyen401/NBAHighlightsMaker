@@ -1,8 +1,24 @@
 from moviepy.editor import TextClip, VideoFileClip, CompositeVideoClip, concatenate_videoclips
 from moviepy.video.fx.all import fadein, fadeout
-import sys
+#import sys
+from proglog import ProgressBarLogger
 import os
+import asyncio
 #from NBAHighlightsMaker.players.getplayers import read_event_ids
+
+class MyProgressBarLogger(ProgressBarLogger):
+    def __init__(self, update_progress_bar):
+        super().__init__()
+        self.min_time_interval = 1.0
+        self.update_progress_bar = update_progress_bar
+
+    def bars_callback(self, bar, attr, value, old_value=None):
+        if bar == 't' and attr == 'index':
+            total = self.bars[bar]['total']
+            percent = int((value / total) * 100)
+            # value and total are in frames, so convert to seconds
+            self.update_progress_bar(percent, f"Editing - {percent}% : {(value / 60):.1f}s / {(total / 60):.1f}s")
+
 
 #organize files in video created date
 class VideoMaker():
@@ -63,11 +79,15 @@ class VideoMaker():
         return composite_clips
 
     # concatenate all composite clips
-    async def make_final_vid(self, clip_paths):
+    async def make_final_vid(self, clip_paths, update_progress_bar):
         clips = await self.create_video_clips(clip_paths)
+        self.total_duration = sum([clip.duration for clip in clips])
         final_vid = concatenate_videoclips(clips, method="chain")
+        logger = MyProgressBarLogger(update_progress_bar)
         path = os.path.join(self.data_dir, "final_vid.mp4")
-        final_vid.write_videofile(path, codec = 'libx264', fps = 24)
+        # separate thread so ui doesn't freeze
+        await asyncio.to_thread(final_vid.write_videofile, path, codec='libx264', fps=60, logger=logger)
+        print("Final video created at: ", path)
         return final_vid
 
 # def main():
