@@ -266,14 +266,22 @@ class GameLogTable(QWidget):
         except Exception as e:
             print(f"An error occurred: {e}")
         
-        QMessageBox.information(self, "Success", "Video created successfully!")
+        reply = QMessageBox.information(self, "Success", "Video created successfully! Would you like to open the file?", QMessageBox.Yes | QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            os.startfile(os.path.join(data_dir, "final_vid.mp4"))
         self.cancel_button.setEnabled(False)
         self.cancel_button.setText("Cancel")
 
     # fetch game log, fill table with it
     def update_table(self, player_id, season, season_type):
+        # clear table
+        self.table_widget.clear()
+        # clear selection
+        self.table_widget.clearSelection()
+
         # get game log for player
-        self.curr_game_log = self.data_retriever.get_game_log(player_id, season, season_type)[['GAME_DATE', 'WL', 'MIN', 'MATCHUP', 'Game_ID', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PF']]
+        # FIND WAY TO GET GAME ID WITHOUT DISPLAYING IT LATER
+        self.curr_game_log = self.data_retriever.get_game_log(player_id, season, season_type)[['Game_ID', 'GAME_DATE', 'MATCHUP', 'WL', 'MIN', 'FGM', 'FGA', 'FTM', 'FTA', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'PTS']]
         if self.curr_game_log.empty:
             print("No game log found for player.")
             QMessageBox.critical(self, "Error: No Game Log Found", "No game log found for combination selected, please try another player/season/season type combination.")
@@ -306,5 +314,3 @@ class GameLogTable(QWidget):
         # resize rows to remove excess white space
         self.table_widget.resizeRowsToContents()
 
-        # deselect if row is clicked from previous player chosen
-        self.table_widget.clearSelection()
