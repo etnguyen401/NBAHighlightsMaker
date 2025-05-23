@@ -49,7 +49,8 @@ class GameLogTable(QWidget):
         self.fg_missed_box = QCheckBox("FG Missed")
         self.fta_box = QCheckBox("Free Throw Attempts")
         self.rebound_box = QCheckBox("Rebounds")
-        self.foul_box = QCheckBox("Fouls (Committed + Drawn)")
+        self.fouls_committed_box = QCheckBox("Fouls Committed")
+        self.fouls_drawn_box = QCheckBox("Fouls Drawn")
         self.turnover_box = QCheckBox("Turnovers")
         self.steal_box = QCheckBox("Steals")
         self.block_box = QCheckBox("Blocks")
@@ -60,7 +61,8 @@ class GameLogTable(QWidget):
         self.fg_missed_box.setChecked(True)
         self.fta_box.setChecked(True)
         self.rebound_box.setChecked(True)
-        self.foul_box.setChecked(True)
+        self.fouls_committed_box.setChecked(True)
+        self.fouls_drawn_box.setChecked(True)
         self.turnover_box.setChecked(True)
         self.steal_box.setChecked(True)
         self.block_box.setChecked(True)
@@ -95,7 +97,8 @@ class GameLogTable(QWidget):
         self.layout_checkboxes.addWidget(self.assists_box)
         self.layout_checkboxes.addWidget(self.fta_box)
         self.layout_checkboxes.addWidget(self.rebound_box)
-        self.layout_checkboxes.addWidget(self.foul_box)
+        self.layout_checkboxes.addWidget(self.fouls_committed_box)
+        self.layout_checkboxes.addWidget(self.fouls_drawn_box)
         self.layout_checkboxes.addWidget(self.turnover_box)
         self.layout_checkboxes.addWidget(self.steal_box)
         self.layout_checkboxes.addWidget(self.block_box)
@@ -152,7 +155,8 @@ class GameLogTable(QWidget):
         self.fg_missed_box.setChecked(checked)
         self.fta_box.setChecked(checked)
         self.rebound_box.setChecked(checked)
-        self.foul_box.setChecked(checked)
+        self.fouls_committed_box.setChecked(checked)
+        self.fouls_drawn_box.setChecked(checked)
         self.turnover_box.setChecked(checked)
         self.steal_box.setChecked(checked)
         self.block_box.setChecked(checked)
@@ -181,7 +185,7 @@ class GameLogTable(QWidget):
             boxes_checked.add(4)
         if self.turnover_box.isChecked() or self.steal_box.isChecked():
             boxes_checked.add(5)
-        if self.foul_box.isChecked():
+        if self.fouls_committed_box.isChecked() or self.fouls_drawn_box.isChecked():
             boxes_checked.add(6)
         
         # call get events id
@@ -204,7 +208,10 @@ class GameLogTable(QWidget):
             event_ids = event_ids.loc[((event_ids['EVENTMSGTYPE'] == 5) & (event_ids['PLAYER2_ID'] == self.player_id)) | (event_ids['EVENTMSGTYPE'] != 5)]
         if self.block_box.isChecked() and not self.fg_missed_box.isChecked():
             event_ids = event_ids.loc[((event_ids['EVENTMSGTYPE'] == 2) & (event_ids['PLAYER3_ID'] == self.player_id)) | (event_ids['EVENTMSGTYPE'] != 2)]
-
+        if self.fouls_committed_box.isChecked() and not self.fouls_drawn_box.isChecked():
+            event_ids = event_ids.loc[((event_ids['EVENTMSGTYPE'] == 6) & (event_ids['PLAYER1_ID'] == self.player_id)) | (event_ids['EVENTMSGTYPE'] != 6)]
+        if self.fouls_drawn_box.isChecked() and not self.fouls_committed_box.isChecked():
+            event_ids = event_ids.loc[((event_ids['EVENTMSGTYPE'] == 6) & (event_ids['PLAYER2_ID'] == self.player_id)) | (event_ids['EVENTMSGTYPE'] != 6)]
         # make async io task, get download links
         # event_ids.to_csv('test.csv', index = False)
         self.get_links_task = asyncio.create_task(self.data_retriever.get_download_links(self.game_id, event_ids, self.update_progress_bar))

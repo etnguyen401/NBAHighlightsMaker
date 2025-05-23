@@ -182,7 +182,7 @@ class DataRetriever:
                 value = int((index + 1) / len(event_ids) * 100)
                 update_progress_bar(value, "Get link for: {}".format(video_event['desc']))
                 print("Sleeping...")
-                await asyncio.sleep(random.uniform(1.5, 3.0))
+                await asyncio.sleep(random.uniform(1.2, 2.0))
             except requests.exceptions.HTTPError as e:
                 print("HTTP error: ", e)
             except requests.exceptions.ConnectionError as e:

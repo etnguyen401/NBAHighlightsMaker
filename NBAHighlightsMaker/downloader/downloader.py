@@ -34,7 +34,7 @@ class Downloader():
             await tab.set_download_path(self.data_dir)
             # wait for page to load
             await tab
-            # print("Sleeping before download of {}...".format(desc))
+            # print("Sleeping before download of {}...".format(event_num))
             # await asyncio.sleep(random.uniform(0.5, 1.5))
             # download to correct path (might need to get 
             # another WCTIMESTRING column
@@ -42,11 +42,9 @@ class Downloader():
             await tab.download_file(dl_link, "{}.mp4".format(event_num))
             #sleep for random time
             value = int((index + 1) / len(event_ids) * 100)
-            print("Index: {}, length: {}".format(index, len(event_ids)))
-            print(value)
             update_progress_bar(value, "Downloading: {}".format(desc))
             print("Sleeping after download of {}.mp4...".format(event_num))
-            await asyncio.sleep(random.uniform(1.5, 2.5))
+            await asyncio.sleep(random.uniform(3.0, 4.0))
             event_ids.loc[index, 'FILE_PATH'] = os.path.join(self.data_dir, "{}.mp4".format(event_num))
             await browser.stop()
         print("Finished Download")
