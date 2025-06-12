@@ -1,7 +1,9 @@
 import sys
 import asyncio
+from fake_useragent import UserAgent
 from qasync import QEventLoop
 from NBAHighlightsMaker.players.getplayers import DataRetriever
+from NBAHighlightsMaker.downloader.downloader import Downloader
 from NBAHighlightsMaker.ui.ui import HighlightsUI
 from PySide6.QtWidgets import (QApplication)
 
@@ -13,9 +15,10 @@ def startup():
     loop = QEventLoop(app)
     # set loop as current asyncio event loop
     asyncio.set_event_loop(loop)
-
-    data_retriever = DataRetriever()
-    window = HighlightsUI(data_retriever)
+    ua = UserAgent(platforms='desktop')
+    data_retriever = DataRetriever(ua)
+    downloader = Downloader(ua)
+    window = HighlightsUI(data_retriever, downloader)
     window.show()
     with loop:
         # later change this to wait for shutdown signal, then cleanup

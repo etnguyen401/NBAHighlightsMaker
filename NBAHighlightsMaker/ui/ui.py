@@ -8,13 +8,13 @@ from NBAHighlightsMaker.ui.player_search import PlayerSearchBox
 from NBAHighlightsMaker.ui.game_log_table import GameLogTable
 
 class HighlightsUI(QMainWindow):
-    def __init__(self, data_retriever):
+    def __init__(self, data_retriever, downloader):
         super().__init__()
         self.setWindowTitle("NBAHighlightsMaker")
         self.setGeometry(300, 300, 540, 500)
 
         self.data_retriever = data_retriever
-        
+        self.downloader = downloader
         # set to vertical box layout
         self.layout = QVBoxLayout()
 
@@ -25,7 +25,7 @@ class HighlightsUI(QMainWindow):
         player_search_label.setBuddy(self.player_search_widget)
         
         # make table widget
-        self.table_widget = GameLogTable(self.data_retriever)
+        self.table_widget = GameLogTable(self.data_retriever, self.downloader)
         game_log_label = QLabel("Game Log:")
         game_log_label.setBuddy(self.table_widget)
 

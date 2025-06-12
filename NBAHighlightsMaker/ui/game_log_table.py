@@ -9,11 +9,11 @@ import asyncio
 data_dir = os.path.join(os.getcwd(), 'data', 'vids')
 
 class GameLogTable(QWidget):
-    def __init__(self, data_retriever):
+    def __init__(self, data_retriever, downloader):
         super().__init__()
         
         self.data_retriever = data_retriever
-        self.downloader = Downloader()
+        self.downloader = downloader
         self.video_maker = VideoMaker()
 
         self.curr_game_log = None
@@ -202,10 +202,14 @@ class GameLogTable(QWidget):
         # if fgm_box is checked, assists already included
         # else if fgm_box wasn't checked and asists was, filter event ids that are fgm and only get the rows
         # that have player2id = player_id
+        if self.fg_made_box.isChecked() and not self.assists_box.isChecked():
+            event_ids = event_ids.loc[((event_ids['EVENTMSGTYPE'] == 1) & (event_ids['PLAYER1_ID'] == self.player_id)) | (event_ids['EVENTMSGTYPE'] != 1)]
         if self.assists_box.isChecked() and not self.fg_made_box.isChecked():
             event_ids = event_ids.loc[((event_ids['EVENTMSGTYPE'] == 1) & (event_ids['PLAYER2_ID'] == self.player_id)) | (event_ids['EVENTMSGTYPE'] != 1)]
         if self.steal_box.isChecked() and not self.turnover_box.isChecked():
             event_ids = event_ids.loc[((event_ids['EVENTMSGTYPE'] == 5) & (event_ids['PLAYER2_ID'] == self.player_id)) | (event_ids['EVENTMSGTYPE'] != 5)]
+        if self.turnover_box.isChecked() and not self.steal_box.isChecked():
+            event_ids = event_ids.loc[((event_ids['EVENTMSGTYPE'] == 5) & (event_ids['PLAYER1_ID'] == self.player_id)) | (event_ids['EVENTMSGTYPE'] != 5)]
         if self.block_box.isChecked() and not self.fg_missed_box.isChecked():
             event_ids = event_ids.loc[((event_ids['EVENTMSGTYPE'] == 2) & (event_ids['PLAYER3_ID'] == self.player_id)) | (event_ids['EVENTMSGTYPE'] != 2)]
         if self.fouls_committed_box.isChecked() and not self.fouls_drawn_box.isChecked():
@@ -220,7 +224,7 @@ class GameLogTable(QWidget):
             self.cancel_button.setText("Cancel Getting Links")
             self.cancel_button.setEnabled(True)
             event_ids = await self.get_links_task
-            # result.to_csv('event_ids2.csv', index = False)
+            await event_ids.to_csv('test.csv', index = False)
         except asyncio.CancelledError:
             print("Getting links was cancelled by user")
             # the only thing that changed was the event_ids, but
@@ -228,11 +232,11 @@ class GameLogTable(QWidget):
             # be new anyways
             return
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print(f"An error occurred while getting links: {e}")
         
         self.update_progress_bar(0, "")
         # call download_links to download all the vids
-        self.download_task = asyncio.create_task(self.downloader.download_links(event_ids, self.update_progress_bar))
+        self.download_task = asyncio.create_task(self.downloader.download_files(event_ids, self.update_progress_bar))
         try:
             self.cancel_button.setText("Cancel Getting Downloads")
             self.cancel_button.setEnabled(True)
@@ -247,7 +251,7 @@ class GameLogTable(QWidget):
             os.makedirs(data_dir)
             return
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print(f"An error occurred while downloading: {e}")
 
         self.update_progress_bar(0, "")
         # edit the videos together
@@ -264,11 +268,15 @@ class GameLogTable(QWidget):
                 os.remove(os.path.join(data_dir, "final_vid.mp4"))
             return
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print(f"An error occurred while editing: {e}")
         
         reply = QMessageBox.information(self, "Success", "Video created successfully! Would you like to open the file?", QMessageBox.Yes | QMessageBox.No)
         if reply == QMessageBox.Yes:
             os.startfile(os.path.join(data_dir, "final_vid.mp4"))
+        
+        # clean up
+        self.progress_bar.setVisible(False)
+        self.create_video_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
         self.cancel_button.setText("Cancel")
 

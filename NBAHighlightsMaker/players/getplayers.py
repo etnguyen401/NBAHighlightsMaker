@@ -14,7 +14,7 @@ from urllib3.util import Retry
 from requests.adapters import HTTPAdapter
 
 class DataRetriever:
-    def __init__(self):
+    def __init__(self, ua):
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0',
             'x-nba-stats-origin': 'stats',
@@ -29,9 +29,10 @@ class DataRetriever:
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36 Edg/133.0.0.0',
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 Edg/132.0.0.0',
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0'
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0',
         ]
-        
+        #Useragent object to make random user agents
+        self.ua = ua
     def get_active_players(self):
         if not os.path.exists('players.csv'):
             nba_players = players.get_players()
@@ -163,7 +164,13 @@ class DataRetriever:
             url = 'https://stats.nba.com/stats/videoeventsasset?GameEventID={}&GameID={}'.format(event_id, game_id)
             # randomize user agent
             # self.headers['User-Agent'] = random.choice(self.user_agents)
+            
+            # test = self.ua.random
+            # print("Generated User-Agent: ", test)
+            # # update session headers with random user agent
+            # session.headers.update({'User-Agent': test})
             session.headers.update({'User-Agent': random.choice(self.user_agents)})
+            print("Session headers: ", session.headers)
             try:
                 print("Requesting for event id: ", event_id)
                 r = session.get(url, headers = self.headers, timeout = 10)
