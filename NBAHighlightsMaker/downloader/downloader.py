@@ -44,7 +44,7 @@ class Downloader():
             async with semaphore:
                 headers = self.headers.copy()
                 headers['User-Agent'] = random.choice(self.user_agents)
-                time = random.uniform(1.0, 2.5)
+                time = random.uniform(0, 2.5)
                 print(f"Sleeping for {time:.2f} seconds before downloading {row.EVENTNUM}.mp4...") 
                 await asyncio.sleep(time)
                 async with session.get(row.VIDEO_LINK, headers=headers, timeout=30) as response:
@@ -87,11 +87,6 @@ class Downloader():
                 # Create download tasks
                 tasks.append(self.download_file(session, event_ids, row, file_path, update_progress_bar,
                                                 semaphore, lock))
-                # Update the DataFrame with the file path
-                #event_ids.loc[row.Index, 'FILE_PATH'] = file_path
-                # Update progress bar
-                #value = int((index + 1) / len(event_ids) * 100)
-                #update_progress_bar(value, "Downloading: {}".format(desc))
             await asyncio.gather(*tasks)
         print("Finished Download")
         # reset counter

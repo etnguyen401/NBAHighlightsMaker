@@ -218,13 +218,13 @@ class GameLogTable(QWidget):
             event_ids = event_ids.loc[((event_ids['EVENTMSGTYPE'] == 6) & (event_ids['PLAYER2_ID'] == self.player_id)) | (event_ids['EVENTMSGTYPE'] != 6)]
         # make async io task, get download links
         # event_ids.to_csv('test.csv', index = False)
-        self.get_links_task = asyncio.create_task(self.data_retriever.get_download_links(self.game_id, event_ids, self.update_progress_bar))
+        self.get_links_task = asyncio.create_task(self.data_retriever.get_download_links_async(self.game_id, event_ids, self.update_progress_bar))
         # save the event_ids returned from the task
         try:
             self.cancel_button.setText("Cancel Getting Links")
             self.cancel_button.setEnabled(True)
             event_ids = await self.get_links_task
-            await event_ids.to_csv('test.csv', index = False)
+            event_ids.to_csv('test.csv', index = False)
         except asyncio.CancelledError:
             print("Getting links was cancelled by user")
             # the only thing that changed was the event_ids, but
@@ -233,6 +233,8 @@ class GameLogTable(QWidget):
             return
         except Exception as e:
             print(f"An error occurred while getting links: {e}")
+            print("Returning...")
+            return
         
         self.update_progress_bar(0, "")
         # call download_links to download all the vids

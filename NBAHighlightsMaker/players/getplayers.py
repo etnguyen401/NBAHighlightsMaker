@@ -10,15 +10,31 @@ import pandas as pd
 import requests
 import time 
 import asyncio
+import aiohttp
 from urllib3.util import Retry
 from requests.adapters import HTTPAdapter
 
+
 class DataRetriever:
     def __init__(self, ua):
+        # self.headers = {
+        #     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0',
+        #     'x-nba-stats-origin': 'stats',
+        #     'Referer': 'https://stats.nba.com/',
+        # }
         self.headers = {
+            'Host': 'stats.nba.com',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0',
+            'Accept': 'application/json, text/plain, */*',
+            #Accept-Language': en-US,en;q=0.9,vi;q=0.8
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br, zstd',
             'x-nba-stats-origin': 'stats',
+            'x-nba-stats-token': 'true',
+            'Connection': 'keep-alive',
             'Referer': 'https://stats.nba.com/',
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache'
         }
         self.user_agents = [
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
@@ -33,6 +49,7 @@ class DataRetriever:
         ]
         #Useragent object to make random user agents
         self.ua = ua
+        self.counter = 0
     def get_active_players(self):
         if not os.path.exists('players.csv'):
             nba_players = players.get_players()
@@ -141,10 +158,76 @@ class DataRetriever:
 
     #make another function to only get one link
     # so you can retry if it fails later
-    def get_download_link(self, event_id, game_id):
-        print("Getting download link: ")
-        # get the download link
+    async def get_download_link(self, session, game_id, row, event_ids, 
+                            update_progress_bar, semaphore, lock):
+        retry_count = 0
+        while retry_count < 3:
+            async with semaphore:
+                print ("Retry count: ", retry_count)
+                headers = self.headers.copy()
+                headers['User-Agent'] = random.choice(self.user_agents)
+                time = random.uniform(0, 2.0)
+                print(f"Sleeping for {time:.2f} seconds before getting link for {row.EVENTNUM}...")
+                await asyncio.sleep(time)
+                url = 'https://stats.nba.com/stats/videoeventsasset?GameEventID={}&GameID={}'.format(row.EVENTNUM, game_id)
+                try:
+                    async with session.get(url, headers=headers, timeout=10, raise_for_status=True) as response:
+                        if response.status == 200:
+                            r_json = await response.json()
+                            video_link = r_json['resultSets']['Meta']['videoUrls'][0]['lurl']
+                            desc = r_json['resultSets']['playlist'][0]['dsc']
+                            async with lock:
+                                # add the link and description to event_ids
+                                # 1st part of loc filters rows, 2nd part is for columns
+                                event_ids.loc[event_ids['EVENTNUM'] == row.EVENTNUM, 'VIDEO_LINK'] = video_link
+                                event_ids.loc[event_ids['EVENTNUM'] == row.EVENTNUM, 'DESCRIPTION'] = desc
+                                self.counter += 1
+                                value = int((self.counter + 1) / len(event_ids) * 100)
+                                update_progress_bar(value, "Get link for: {}".format(desc))
+                            print("Sleeping...")
+                            await asyncio.sleep(random.uniform(0, 1.0))
+                            return
+                        elif response.status == 429:
+                            print(f"Rate limit exceeded for {row.EVENTNUM}. Retrying after a delay...")
+                            await asyncio.sleep(random.uniform(3, 7))
+                            # Retry the download after waiting
+                            retry_count += 1
+                        else:
+                            print(f"Failed to get link for {row.EVENTNUM}: {response.status}")
+                            retry_count += 1
+                except aiohttp.ClientConnectionError as e:
+                    print(f"Connection error: {e}")
+                    retry_count += 1
+                except aiohttp.ClientResponseError as e:
+                    print(f"Response error: {e}")
+                    retry_count += 1
+                except aiohttp.ClientError as e:
+                    print(f"Other error: {e}")
+                    retry_count += 1
+        print(f"Failed to get {row.EVENTNUM}. Skipping.")
         
+    async def get_download_links_async(self, game_id, event_ids, update_progress_bar):
+        event_ids['VIDEO_LINK'] = ''
+        event_ids['DESCRIPTION'] = ''
+        connector = aiohttp.TCPConnector(limit=2)
+        semaphore = asyncio.Semaphore(2)
+        async with aiohttp.ClientSession(
+            connector = connector,
+            headers = self.headers,
+        ) as session:
+            tasks = []
+            lock = asyncio.Lock()
+            for row in event_ids.itertuples(index=True):
+                tasks.append(self.get_download_link(session, game_id, row, event_ids, 
+                                                    update_progress_bar, semaphore, 
+                                                    lock))
+            await asyncio.gather(*tasks)
+        print("Finished getting download links.")
+        self.counter = 0
+        return event_ids
+
+            
+    
     async def get_download_links(self, game_id, event_ids, update_progress_bar):
         # add another column to event_ids for the download link
         event_ids['VIDEO_LINK'] = ''
