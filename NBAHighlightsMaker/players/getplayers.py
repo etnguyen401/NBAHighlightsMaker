@@ -26,8 +26,8 @@ class DataRetriever:
             'Host': 'stats.nba.com',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0',
             'Accept': 'application/json, text/plain, */*',
-            #Accept-Language': en-US,en;q=0.9,vi;q=0.8
-            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Language': 'en-US,en;q=0.9,vi;q=0.8',
+            #'Accept-Language': 'en-US,en;q=0.5',
             'Accept-Encoding': 'gzip, deflate, br, zstd',
             'x-nba-stats-origin': 'stats',
             'x-nba-stats-token': 'true',
@@ -46,6 +46,7 @@ class DataRetriever:
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 Edg/132.0.0.0',
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Safari/605.1.15'
         ]
         #Useragent object to make random user agents
         self.ua = ua
@@ -163,15 +164,18 @@ class DataRetriever:
         retry_count = 0
         while retry_count < 3:
             async with semaphore:
-                print ("Retry count: ", retry_count)
+                print(f"Retry count: {retry_count}")
                 headers = self.headers.copy()
-                headers['User-Agent'] = random.choice(self.user_agents)
+                headers['User-Agent'] = self.ua.random
+                print("Headers: ", headers)
                 time = random.uniform(0, 2.0)
                 print(f"Sleeping for {time:.2f} seconds before getting link for {row.EVENTNUM}...")
                 await asyncio.sleep(time)
                 url = 'https://stats.nba.com/stats/videoeventsasset?GameEventID={}&GameID={}'.format(row.EVENTNUM, game_id)
+                print("Getting link for url: ", url)
+                # await asyncio.sleep(3.0)
                 try:
-                    async with session.get(url, headers=headers, timeout=10, raise_for_status=True) as response:
+                    async with session.get(url, headers=headers, timeout=10) as response:
                         if response.status == 200:
                             r_json = await response.json()
                             video_link = r_json['resultSets']['Meta']['videoUrls'][0]['lurl']
@@ -182,7 +186,7 @@ class DataRetriever:
                                 event_ids.loc[event_ids['EVENTNUM'] == row.EVENTNUM, 'VIDEO_LINK'] = video_link
                                 event_ids.loc[event_ids['EVENTNUM'] == row.EVENTNUM, 'DESCRIPTION'] = desc
                                 self.counter += 1
-                                value = int((self.counter + 1) / len(event_ids) * 100)
+                                value = int((self.counter) / len(event_ids) * 100)
                                 update_progress_bar(value, "Get link for: {}".format(desc))
                             print("Sleeping...")
                             await asyncio.sleep(random.uniform(0, 1.0))
@@ -204,7 +208,13 @@ class DataRetriever:
                 except aiohttp.ClientError as e:
                     print(f"Other error: {e}")
                     retry_count += 1
-        print(f"Failed to get {row.EVENTNUM}. Skipping.")
+                except Exception as e:
+                    print(f"Unexpected error: {e}")
+                    retry_count += 1
+        print(f"Max retries exceeded for {row.EVENTNUM}. Skipping.")
+        raise Exception(f"Unexpected error when getting link for event number: {row.EVENTNUM}. Max retries exceeded.")
+        
+
         
     async def get_download_links_async(self, game_id, event_ids, update_progress_bar):
         event_ids['VIDEO_LINK'] = ''
@@ -306,4 +316,4 @@ def main():
 if __name__ == '__main__':
     # test()
     main()
-    
+

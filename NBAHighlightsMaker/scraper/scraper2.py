@@ -19,14 +19,15 @@ headers = {
     'Referer': 'https://stats.nba.com/',
 }
 
-headers['User-Agent'] = random.choice(user_agents)
+headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Safari/605.1.15'
 
 event_id = '8'
 game_id = '0022400832'
 url = 'https://stats.nba.com/stats/videoeventsasset?GameEventID={}&GameID={}'.format(event_id, game_id)
 
+print("about to make request to URL:", url)
 try:
-    r = requests.get(url, headers=headers)
+    r = requests.get(url, headers=headers, timeout=10)
     r.raise_for_status()  # Check if the request was successful
     print("Response status code:", r.status_code)
     # print("Response headers:", r.headers)
@@ -44,4 +45,5 @@ except requests.exceptions.RequestException as e:
     print(f"Request failed: {e}")
 except requests.exceptions.JSONDecodeError as e:
     print(f"JSON decode error: {e}")
-    print("Response content:", r.text)  # Print the raw response content for debugging
+except Exception as e:
+    print(f"An unexpected error occurred: {e}")

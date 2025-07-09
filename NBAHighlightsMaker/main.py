@@ -15,7 +15,7 @@ def startup():
     loop = QEventLoop(app)
     # set loop as current asyncio event loop
     asyncio.set_event_loop(loop)
-    ua = UserAgent(platforms='desktop')
+    ua = UserAgent(browsers=['Safari'], platforms='desktop')
     data_retriever = DataRetriever(ua)
     downloader = Downloader(ua)
     window = HighlightsUI(data_retriever, downloader)

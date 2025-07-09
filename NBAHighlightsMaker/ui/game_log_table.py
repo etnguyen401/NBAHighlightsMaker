@@ -1,4 +1,5 @@
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal, QObject
+from proglog import ProgressBarLogger
 from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QCheckBox, QPushButton, QTableWidget, QWidget, QTableWidgetItem, QMessageBox
 from NBAHighlightsMaker.downloader.downloader import Downloader
 from NBAHighlightsMaker.editor.editor import VideoMaker
@@ -14,7 +15,7 @@ class GameLogTable(QWidget):
         
         self.data_retriever = data_retriever
         self.downloader = downloader
-        self.video_maker = VideoMaker()
+        self.video_maker = VideoMaker(self.update_progress_bar)
 
         self.curr_game_log = None
         self.player_id = None
@@ -27,13 +28,13 @@ class GameLogTable(QWidget):
         self.layout = QVBoxLayout(self)
 
         self.table_widget = QTableWidget()
-        self.table_widget.setSortingEnabled(True)
+        
         # make table widget not editable
         self.table_widget.setEditTriggers(QTableWidget.NoEditTriggers)
         # only be able to select one row at a time
         self.table_widget.setSelectionBehavior(QTableWidget.SelectRows)
         self.table_widget.setSelectionMode(QTableWidget.SingleSelection)
-        
+        #self.table_widget.setSortingEnabled(True)
         # enable button if row is selected
         self.table_widget.itemSelectionChanged.connect(self.handle_row_selection)
 
@@ -79,7 +80,7 @@ class GameLogTable(QWidget):
         #make cancel button
         self.cancel_button = QPushButton("Cancel")
         self.cancel_button.setEnabled(False)
-        self.cancel_button.clicked.connect(self.handle_cancel_click)
+        self.cancel_button.clicked.connect(self.cancel_tasks)
 
         #make progress bar and label
         self.progress_bar_label = QLabel("")
@@ -124,28 +125,30 @@ class GameLogTable(QWidget):
         else:
             self.create_video_button.setEnabled(False)
 
-    def handle_cancel_click(self):
-        if self.get_links_task:
-            self.get_links_task.cancel()
-            self.get_links_task = None
-            print("Getting Links cancelled.")
+    # def handle_cancel_click(self):
+    #     if self.get_links_task:
+    #         self.get_links_task.cancel()
+    #         self.get_links_task = None
+    #         print("Getting Links cancelled.")
         
-        if self.download_task:
-            self.download_task.cancel()
-            self.download_task = None
-            print("Downloading cancelled.")
+    #     if self.download_task:
+    #         self.download_task.cancel()
+    #         self.download_task = None
+    #         print("Downloading cancelled.")
         
-        if self.edit_task:
-            self.edit_task.cancel()
-            self.edit_task = None
-            print("Creating video cancelled.")
+    #     if self.edit_task:
+    #         self.edit_task.cancel()
+    #         self.edit_task = None
+    #         print("Creating video cancelled.")
         
-        self.create_video_button.setEnabled(True)
-        self.cancel_button.setEnabled(False)
-        self.cancel_button.setText("Cancel")
-        self.progress_bar.setVisible(False)
-        self.progress_bar_label.setText("")
-        self.progress_bar.setValue(0)
+    #     self.create_video_button.setEnabled(True)
+
+    #     self.cancel_button.setEnabled(False)
+    #     self.cancel_button.setText("Cancel")
+
+    #     self.progress_bar.setVisible(False)
+    #     self.progress_bar_label.setText("")
+    #     self.progress_bar.setValue(0)
     
     def handle_select_all_click(self):
         # if it's checked, and the user clicks it, uncheck all  
@@ -160,7 +163,49 @@ class GameLogTable(QWidget):
         self.turnover_box.setChecked(checked)
         self.steal_box.setChecked(checked)
         self.block_box.setChecked(checked)
-    
+
+    def cleanup(self):
+        # if self.get_links_task:
+        #     self.get_links_task.cancel()
+        #     self.get_links_task = None
+        #     print("Getting Links cancelled.")
+        
+        # if self.download_task:
+        #     self.download_task.cancel()
+        #     self.download_task = None
+        #     print("Downloading cancelled.")
+        
+        # if self.edit_task:
+        #     self.edit_task.cancel()
+        #     self.edit_task = None
+        #     print("Creating video cancelled.")
+
+        self.create_video_button.setEnabled(True)
+
+        self.progress_bar.setVisible(False)
+        self.progress_bar_label.setText("")
+        self.progress_bar_label.setVisible(False)
+        self.progress_bar.setValue(0)
+        
+        self.cancel_button.setEnabled(False)
+        self.cancel_button.setText("Cancel")
+        
+    def cancel_tasks(self):
+        if self.get_links_task:
+            self.get_links_task.cancel()
+            self.get_links_task = None
+            print("Getting Links task cancelled.")
+        
+        if self.download_task:
+            self.download_task.cancel()
+            self.download_task = None
+            print("Downloading task cancelled.")
+        
+        if self.edit_task:
+            self.edit_task.cancel()
+            self.edit_task = None
+            print("Creating video task cancelled.")
+
     async def handle_create_vid_click(self):
         # print("Player ID:", self.player_id)
         # print("Game ID:", self.game_id)
@@ -226,14 +271,16 @@ class GameLogTable(QWidget):
             event_ids = await self.get_links_task
             event_ids.to_csv('test.csv', index = False)
         except asyncio.CancelledError:
-            print("Getting links was cancelled by user")
+            print("Getting links was cancelled by user.")
             # the only thing that changed was the event_ids, but
             # when the user clicks create video again, event_ids will
             # be new anyways
+            self.cleanup()
             return
         except Exception as e:
             print(f"An error occurred while getting links: {e}")
             print("Returning...")
+            self.cleanup()
             return
         
         self.update_progress_bar(0, "")
@@ -251,39 +298,58 @@ class GameLogTable(QWidget):
                 shutil.rmtree(data_dir)
             # create/recreate data folder
             os.makedirs(data_dir)
+            self.cleanup()
             return
         except Exception as e:
+            self.cleanup()
             print(f"An error occurred while downloading: {e}")
 
         self.update_progress_bar(0, "")
         # edit the videos together
-        self.edit_task = asyncio.create_task(self.video_maker.make_final_vid(event_ids['FILE_PATH'].tolist(), self.update_progress_bar))
+
+        # logger = MyProgressBarLogger()
+        # logger.progress_bar_values.connect(self.update_progress_bar)
+
+        # make cancel button click stop moviepy editing
+        # self.cancel_button.clicked.connect(logger.cancel)
+
+        self.edit_task = asyncio.create_task(self.video_maker.make_final_vid(event_ids['FILE_PATH'].tolist()))
         try:
             self.cancel_button.setText("Cancel Creating Video")
             self.cancel_button.setEnabled(True)
             final_vid = await self.edit_task
+        except IOError as e:
+            print(f"IOError caught in game_log_table: {e}")
+            self.video_maker.cancel_editing()
+            self.cleanup()
+            return
         except asyncio.CancelledError:
-            print("Creating video was cancelled by user")
+            print("AsyncIO CancelledError by editing task.")
             # might have created the final vid, delete the final vid only
             # CHANGE LATER TO ACCOUNT FOR USER SPECIFIED PATH
-            if os.path.exists(os.path.join(data_dir, "final_vid.mp4")):
-                os.remove(os.path.join(data_dir, "final_vid.mp4"))
+            # if os.path.exists(os.path.join(data_dir, "final_vid.mp4")):
+            #     os.remove(os.path.join(data_dir, "final_vid.mp4"))
+            self.video_maker.cancel_editing()
+            #self.cancel_button.clicked.disconnect(logger.cancel)
+            self.cleanup()
             return
         except Exception as e:
             print(f"An error occurred while editing: {e}")
+            self.video_maker.cancel_editing()
+            self.cleanup()
+            return
         
+
         reply = QMessageBox.information(self, "Success", "Video created successfully! Would you like to open the file?", QMessageBox.Yes | QMessageBox.No)
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.Yes and final_vid is not None:
             os.startfile(os.path.join(data_dir, "final_vid.mp4"))
         
         # clean up
-        self.progress_bar.setVisible(False)
-        self.create_video_button.setEnabled(True)
-        self.cancel_button.setEnabled(False)
-        self.cancel_button.setText("Cancel")
+        self.cleanup()
 
     # fetch game log, fill table with it
     def update_table(self, player_id, season, season_type):
+        self.table_widget.setSortingEnabled(False)
         # clear table
         self.table_widget.clear()
         # clear selection
@@ -323,4 +389,28 @@ class GameLogTable(QWidget):
         self.table_widget.resizeColumnsToContents()
         # resize rows to remove excess white space
         self.table_widget.resizeRowsToContents()
+        self.table_widget.setSortingEnabled(True)
 
+class MyProgressBarLogger(QObject, ProgressBarLogger):
+    progress_bar_values = Signal(int, str)
+    def __init__(self):
+        super().__init__()
+        self.min_time_interval = 1.0
+        #self.update_progress_bar = update_progress_bar
+        self.cancelled = False
+
+    def bars_callback(self, bar, attr, value, old_value=None):
+        if self.cancelled:
+            print("Raising exception for the user cancelling.")
+            #raise keyboard interrupt error
+
+            raise KeyboardInterrupt("User cancelled the editing.")
+        if bar == 't' and attr == 'index':
+            total = self.bars[bar]['total']
+            percent = int((value / total) * 100)
+            # value and total are in frames, so convert to seconds
+            self.progress_bar_values.emit(percent, f"Editing - {percent}% : {(value / 60):.1f}s / {(total / 60):.1f}s")
+            #self.update_progress_bar(percent, f"Editing - {percent}% : {(value / 60):.1f}s / {(total / 60):.1f}s")
+
+    def cancel(self):
+        self.cancelled = True

@@ -58,7 +58,7 @@ class Downloader():
                             event_ids.loc[row.Index, 'FILE_PATH'] = file_path
                             # update progress bar
                             self.counter += 1
-                            value = int((self.counter + 1) / len(event_ids) * 100)
+                            value = int((self.counter) / len(event_ids) * 100)
                             update_progress_bar(value, f"Downloading: {row.DESCRIPTION}")
                         return
                     elif response.status == 429:
