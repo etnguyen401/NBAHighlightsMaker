@@ -104,7 +104,7 @@ class VideoMaker():
 
     def terminate_ffmpeg_processes(self):
         for proc in psutil.process_iter(['pid', 'name']):
-            if 'ffmpeg' in proc.info['name']:
+            if proc.info['name'] == 'ffmpeg-win-x86_64-v7.1.exe':
                 print(f"Terminating FFmpeg process: {proc.info['pid']} : {proc.info['name']}")
                 proc.terminate()
     

@@ -37,7 +37,6 @@ class GameLogTable(QWidget):
         #self.table_widget.setSortingEnabled(True)
         # enable button if row is selected
         self.table_widget.itemSelectionChanged.connect(self.handle_row_selection)
-
         # select all button
         self.select_all_button = QCheckBox("Select All")
         self.select_all_button.setChecked(True)
@@ -119,7 +118,16 @@ class GameLogTable(QWidget):
 
     def handle_row_selection(self):
         selected_items = self.table_widget.selectedItems()
-        self.game_id = self.curr_game_log.iloc[self.table_widget.currentRow()]['Game_ID']
+        
+        #self.game_id = self.curr_game_log.iloc[self.table_widget.currentRow()]['Game_ID']
+        self.game_id = selected_items[0].text()
+        print("Type of game id:", type(self.game_id))
+        #print("Selected game id from selected_items:", selected_items[0].text())
+        #print("Selected game id from int selected_items:", int(selected_items[0].text()))
+        
+        # print("Current Row: ", self.table_widget.currentRow())
+        # print("Selected game id from current row:", self.game_id)
+        
         if selected_items:
             self.create_video_button.setEnabled(True)  
         else:
@@ -339,10 +347,11 @@ class GameLogTable(QWidget):
             self.cleanup()
             return
         
-
-        reply = QMessageBox.information(self, "Success", "Video created successfully! Would you like to open the file?", QMessageBox.Yes | QMessageBox.No)
-        if reply == QMessageBox.Yes and final_vid is not None:
-            os.startfile(os.path.join(data_dir, "final_vid.mp4"))
+        #when task is done, video was created successfully
+        if final_vid is None:
+            reply = QMessageBox.information(self, "Success", "Video created successfully! Would you like to open the file?", QMessageBox.Yes | QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                os.startfile(os.path.join(data_dir, "final_vid.mp4"))
         
         # clean up
         self.cleanup()
