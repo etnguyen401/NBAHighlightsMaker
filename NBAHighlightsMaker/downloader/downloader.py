@@ -42,12 +42,11 @@ class Downloader():
         retry_count = 0
         while retry_count < 3:
             async with semaphore:
-                headers = self.headers.copy()
-                headers['User-Agent'] = random.choice(self.user_agents)
+                self.headers['User-Agent'] = self.ua.random
                 time = random.uniform(0, 2.5)
                 print(f"Sleeping for {time:.2f} seconds before downloading {row.EVENTNUM}.mp4...") 
                 await asyncio.sleep(time)
-                async with session.get(row.VIDEO_LINK, headers=headers, timeout=30) as response:
+                async with session.get(row.VIDEO_LINK, headers=self.headers, timeout=30) as response:
                     if response.status == 200:
                         async with aiofiles.open(file_path, 'wb') as f:
                             async for chunk in response.content.iter_chunked(256000):

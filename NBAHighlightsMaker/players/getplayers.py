@@ -164,10 +164,9 @@ class DataRetriever:
         retry_count = 0
         while retry_count < 3:
             async with semaphore:
-                print(f"Retry count: {retry_count}")
-                headers = self.headers.copy()
-                headers['User-Agent'] = self.ua.random
-                print("Headers: ", headers)
+                print(f"Retry count: {retry_count + 1}")
+                self.headers['User-Agent'] = self.ua.random
+                print("Headers: ", self.headers)
                 time = random.uniform(0, 2.0)
                 print(f"Sleeping for {time:.2f} seconds before getting link for {row.EVENTNUM}...")
                 await asyncio.sleep(time)
@@ -175,7 +174,7 @@ class DataRetriever:
                 print("Getting link for url: ", url)
                 # await asyncio.sleep(3.0)
                 try:
-                    async with session.get(url, headers=headers, timeout=10) as response:
+                    async with session.get(url, headers=self.headers, timeout=5) as response:
                         if response.status == 200:
                             r_json = await response.json()
                             video_link = r_json['resultSets']['Meta']['videoUrls'][0]['lurl']
