@@ -368,14 +368,17 @@ class GameLogTable(QWidget):
         self.table_widget.setSortingEnabled(False)
         # clear table
         self.table_widget.clear()
-        # clear selection
-        self.table_widget.clearSelection()
 
         # get game log for player
         # FIND WAY TO GET GAME ID WITHOUT DISPLAYING IT LATER
         self.curr_game_log = self.data_retriever.get_game_log(player_id, season, season_type)[['Game_ID', 'GAME_DATE', 'MATCHUP', 'WL', 'MIN', 'FGM', 'FGA', 'FTM', 'FTA', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'PTS']]
         if self.curr_game_log.empty:
             print("No game log found for player.")
+            # clear table
+            self.table_widget.clear()
+            # clear selection
+            self.table_widget.setRowCount(0)
+            self.table_widget.setColumnCount(0)
             QMessageBox.critical(self, "Error: No Game Log Found", "No game log found for combination selected, please try another player/season/season type combination.")
             return
         self.player_id = player_id
