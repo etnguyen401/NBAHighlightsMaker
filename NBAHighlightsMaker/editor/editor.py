@@ -19,7 +19,6 @@ class MyProgressBarLogger(QObject, ProgressBarLogger):
         self.cancelled = False
 
     def bars_callback(self, bar, attr, value, old_value=None):
-        print("Bars called back:")
         try:
             if self.cancelled:
                 print("Bars callback raised exception for cancelling print.")
@@ -134,7 +133,9 @@ class VideoMaker():
             if final_vid:
                 final_vid.close()
             self.terminate_ffmpeg_processes()
-            # await asyncio.sleep(1)
+            #await asyncio.sleep(0.1)
+            if os.path.exists(os.path.join("temp-audio.mp3")):
+                os.remove(os.path.join("temp-audio.mp3"))
             self.logger.cancelled = False
             #return final_vid
             
