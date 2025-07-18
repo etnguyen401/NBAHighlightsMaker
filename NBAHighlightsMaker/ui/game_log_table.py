@@ -25,6 +25,8 @@ class GameLogTable(QWidget):
         self.download_task = None
         self.edit_task = None
 
+        self.create_video_flag = False
+
         self.layout = QVBoxLayout(self)
 
         self.table_widget = QTableWidget()
@@ -128,7 +130,7 @@ class GameLogTable(QWidget):
         # print("Current Row: ", self.table_widget.currentRow())
         # print("Selected game id from current row:", self.game_id)
         
-        if selected_items:
+        if selected_items and self.create_video_flag == False:
             self.create_video_button.setEnabled(True)  
         else:
             self.create_video_button.setEnabled(False)
@@ -197,6 +199,8 @@ class GameLogTable(QWidget):
         
         self.cancel_button.setEnabled(False)
         self.cancel_button.setText("Cancel")
+
+        self.create_video_flag = False
         
     def cancel_tasks(self):
         if self.get_links_task:
@@ -225,6 +229,7 @@ class GameLogTable(QWidget):
         os.makedirs(data_dir)
         
         self.create_video_button.setEnabled(False)
+        self.create_video_flag = True
         # make a set to store the boxes checked
         boxes_checked = set()
         # check which boxes are checked
@@ -289,6 +294,7 @@ class GameLogTable(QWidget):
             print(f"An error occurred while getting links: {e}")
             print("Returning...")
             self.cleanup()
+            QMessageBox.critical(self, "An error occurred while getting links:", f"{e}\nPlease try creating the video again.")
             return
         
         self.update_progress_bar(0, "")
@@ -309,8 +315,9 @@ class GameLogTable(QWidget):
             self.cleanup()
             return
         except Exception as e:
-            self.cleanup()
             print(f"An error occurred while downloading: {e}")
+            self.cleanup()
+            QMessageBox.critical(self, "An error occurred while downloading:", f"{e}\nPlease try creating the video again.")
 
         self.update_progress_bar(0, "")
         # edit the videos together

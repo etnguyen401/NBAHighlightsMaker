@@ -5,7 +5,7 @@ from qasync import QEventLoop
 from NBAHighlightsMaker.players.getplayers import DataRetriever
 from NBAHighlightsMaker.downloader.downloader import Downloader
 from NBAHighlightsMaker.ui.ui import HighlightsUI
-from PySide6.QtWidgets import (QApplication)
+from PySide6.QtWidgets import QApplication
 
 # make classes and start up the ui
 def startup():
@@ -16,6 +16,7 @@ def startup():
     # set loop as current asyncio event loop
     asyncio.set_event_loop(loop)
     ua = UserAgent(browsers=['Opera', 'Safari', 'Firefox'], platforms='desktop')
+    #ua = UserAgent(browsers=['Edge'], platforms='desktop')
     data_retriever = DataRetriever(ua)
     downloader = Downloader(ua)
     window = HighlightsUI(data_retriever, downloader)

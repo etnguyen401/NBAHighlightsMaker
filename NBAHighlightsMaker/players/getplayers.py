@@ -51,6 +51,7 @@ class DataRetriever:
         #Useragent object to make random user agents
         self.ua = ua
         self.counter = 0
+        self.data_dir = os.path.join(os.getcwd(), 'data/csv')
     def get_active_players(self):
         if not os.path.exists('players.csv'):
             nba_players = players.get_players()
@@ -65,14 +66,15 @@ class DataRetriever:
             return active_players
 
     def get_all_players(self):
-        if not os.path.exists('players_all.csv'):
+        file_path = os.path.join(self.data_dir, 'players_all.csv')
+        if not os.path.exists(file_path):
             nba_players = players.get_players()
             df = pd.DataFrame(nba_players)
-            df.to_csv('players_all.csv', index = False)
+            df.to_csv(file_path, index = False)
             print('All Players data created.')
             return df
         else:
-            all_players = pd.read_csv('players_all.csv')
+            all_players = pd.read_csv(file_path)
             print('All Players data already exists.')
             return all_players
     
@@ -162,6 +164,7 @@ class DataRetriever:
     async def get_download_link(self, session, game_id, row, event_ids, 
                             update_progress_bar, semaphore, lock):
         retry_count = 0
+        error_msg_string = ''
         while retry_count < 3:
             async with semaphore:
                 print(f"Retry count: {retry_count + 1}")
@@ -192,29 +195,38 @@ class DataRetriever:
                             return
                         elif response.status == 429:
                             print(f"Rate limit exceeded for {row.EVENTNUM}. Retrying after a delay...")
+                            error_msg_string += f"Retry {retry_count + 1} failed: Rate limit exceeded, Response Status: {response.status}\n"
                             await asyncio.sleep(random.uniform(3, 7))
                             # Retry the download after waiting
                             retry_count += 1
                         else:
-                            print(f"Failed to get link for {row.EVENTNUM}: {response.status}")
+                            print(f"Failed to get link for {row.EVENTNUM}, Response Status: {response.status}")
+                            error_msg_string += f"Retry {retry_count + 1} failed: Response Status: {response.status}\n"
                             retry_count += 1
                 except aiohttp.ClientConnectionError as e:
-                    print(f"Connection error: {e}")
+                    print(f"Client Connection error: {e}")
+                    error_msg_string += f"Retry {retry_count + 1} failed: Client Connection error.\n"
                     retry_count += 1
                 except aiohttp.ClientResponseError as e:
                     print(f"Response error: {e}")
+                    error_msg_string += f"Try #{retry_count + 1} failed: Client Response error.\n"
                     retry_count += 1
                 except aiohttp.ClientError as e:
-                    print(f"Other error: {e}")
+                    print(f"Client error: {e}")
+                    error_msg_string += f"Try #{retry_count + 1} failed: Client error.\n"
+                    retry_count += 1
+                except asyncio.TimeoutError as e:
+                    print(f"Timeout error: {e}")
+                    error_msg_string += f"Try #{retry_count + 1} failed: Timeout error.\n"
                     retry_count += 1
                 except Exception as e:
                     print(f"Unexpected error: {e}")
+                    error_msg_string += f"Try #{retry_count + 1} failed: Unexpected error.\n"
                     retry_count += 1
         print(f"Max retries exceeded for {row.EVENTNUM}. Skipping.")
-        raise Exception(f"Unexpected error when getting link for event number: {row.EVENTNUM}. Max retries exceeded.")
+        raise Exception(f"Max retries exceeded while getting link for event {row.EVENTNUM}: {row.HOMEDESCRIPTION}.\n\n{error_msg_string}")
         
 
-        
     async def get_download_links_async(self, game_id, event_ids, update_progress_bar):
         event_ids['VIDEO_LINK'] = ''
         event_ids['DESCRIPTION'] = ''
