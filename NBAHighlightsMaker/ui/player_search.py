@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QComboBox, QCompleter, QWidget, QVBoxLayout, QPushButton
+from PySide6.QtWidgets import QComboBox, QCompleter, QLabel, QWidget, QVBoxLayout, QPushButton
 from PySide6.QtCore import QStringListModel, Qt, Signal
 #from NBAHighlightsMaker.players.getplayers import DataRetriever
 
@@ -8,6 +8,7 @@ class PlayerSearchBox(QWidget):
     def __init__(self, data_retriever):
         super().__init__()
 
+        self.search_box_label = QLabel("Search for a Player:")
         self.search_box = QComboBox(self)
         self.search_box.setEditable(True)
         self.search_box.setPlaceholderText("Type or select a player's name...")
@@ -25,6 +26,7 @@ class PlayerSearchBox(QWidget):
         self.update_completer()
 
         # box to select season
+        self.season_box_label = QLabel("Select the Year:")
         self.season_box = QComboBox(self)
         self.season_box.addItems(["2025-26", "2024-25", "2023-24", 
                                   "2022-23", "2021-22", "2020-21", 
@@ -32,6 +34,7 @@ class PlayerSearchBox(QWidget):
                                   "2016-17", "2015-16", "2014-15", 
                                   "2013-14", "2012-13"])
         # box to select season type
+        self.season_type_label = QLabel("Select a Season Type:")
         self.season_type_box = QComboBox(self)
         self.season_type_box.addItems(["Regular Season", "Playoffs",
                                        "All Star", "Pre Season"])
@@ -42,8 +45,11 @@ class PlayerSearchBox(QWidget):
         self.load_game_log_button.clicked.connect(self.handle_load_button_clicked)
 
         self.layout = QVBoxLayout(self)
+        self.layout.addWidget(self.search_box_label)
         self.layout.addWidget(self.search_box)
+        self.layout.addWidget(self.season_box_label)
         self.layout.addWidget(self.season_box)
+        self.layout.addWidget(self.season_type_label)
         self.layout.addWidget(self.season_type_box)
         self.layout.addWidget(self.load_game_log_button)
 

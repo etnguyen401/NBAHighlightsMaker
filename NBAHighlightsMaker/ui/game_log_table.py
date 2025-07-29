@@ -122,8 +122,11 @@ class GameLogTable(QWidget):
         selected_items = self.table_widget.selectedItems()
         
         #self.game_id = self.curr_game_log.iloc[self.table_widget.currentRow()]['Game_ID']
-        self.game_id = selected_items[0].text()
-        print("Type of game id:", type(self.game_id))
+        if selected_items:
+            self.game_id = selected_items[0].text()
+            print("Game ID Selected: ", self.game_id)
+        #print("Type of game id:", type(self.game_id))
+        
         #print("Selected game id from selected_items:", selected_items[0].text())
         #print("Selected game id from int selected_items:", int(selected_items[0].text()))
         
@@ -365,6 +368,9 @@ class GameLogTable(QWidget):
 
     # fetch game log, fill table with it
     def update_table(self, player_id, season, season_type):
+        # set current game id to None
+        self.game_id = None
+
         self.table_widget.setSortingEnabled(False)
         # clear table
         self.table_widget.clear()
