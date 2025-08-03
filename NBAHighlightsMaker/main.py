@@ -7,7 +7,10 @@ from NBAHighlightsMaker.downloader.downloader import Downloader
 from NBAHighlightsMaker.ui.ui import HighlightsUI
 from PySide6.QtWidgets import QApplication
 
-# make classes and start up the ui
+"""
+Startup the application, run the main event loop, and create classes 
+used to get data for later use.
+"""
 def startup():
     app = QApplication(sys.argv)
 
@@ -19,8 +22,12 @@ def startup():
     #ua = UserAgent(browsers=['Edge'], platforms='desktop')
     data_retriever = DataRetriever(ua)
     downloader = Downloader(ua)
+    # make the main window
     window = HighlightsUI(data_retriever, downloader)
     window.show()
+    # bring to front and activate window
+    window.raise_()
+    window.activateWindow()
     with loop:
         # later change this to wait for shutdown signal, then cleanup
         sys.exit(loop.run_forever())
