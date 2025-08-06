@@ -69,7 +69,7 @@ class DataRetriever:
         file_path = os.path.join(self.data_dir, 'players_all.csv')
         if not os.path.exists(file_path):
             nba_players = players.get_players()
-            df = pd.DataFrame(nba_players)
+            df = pd.DataFrame(nba_players)[['id', 'full_name']]
             df.to_csv(file_path, index = False)
             print('All Players data created.')
             return df
@@ -97,7 +97,7 @@ class DataRetriever:
         game_log = game_log.get_data_frames()[0]
         
         # MAYBE DISPLAY ALL GAMES AND MAKE ERROR MESSAGE IN FUTURE
-        game_log = game_log.loc[game_log['VIDEO_AVAILABLE'] == 1]
+        game_log = game_log.loc[game_log['VIDEO_AVAILABLE'] == 1, ['Game_ID', 'GAME_DATE', 'MATCHUP', 'WL', 'MIN', 'FGM', 'FGA', 'FTM', 'FTA', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'PTS']]
         # need to reset index after filtering, as pandas preserves old index
         # set drop = true so old index not put as column
         game_log = game_log.reset_index(drop = True)

@@ -36,7 +36,7 @@ class HighlightsUI(QMainWindow):
         game_log_label = QLabel("Game Log:")
         game_log_label.setBuddy(self.table_widget)
 
-        self.player_search_widget.info_given.connect(self.table_widget.update_table)
+        self.player_search_widget.player_info_given.connect(self.table_widget.update_table)
 
         # layout order:
         #self.layout.addWidget(player_search_label)

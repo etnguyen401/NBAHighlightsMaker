@@ -253,7 +253,6 @@ class GameLogTable(QWidget):
         # get all event ids relating to the player
         event_ids = self.data_retriever.get_event_ids(self.game_id, self.player_id, boxes_checked)
         
-
         self.progress_bar_label.setVisible(True)
         self.progress_bar.setVisible(True)
         
@@ -377,7 +376,7 @@ class GameLogTable(QWidget):
 
         # get game log for player
         # FIND WAY TO GET GAME ID WITHOUT DISPLAYING IT LATER
-        self.curr_game_log = self.data_retriever.get_game_log(player_id, season, season_type)[['Game_ID', 'GAME_DATE', 'MATCHUP', 'WL', 'MIN', 'FGM', 'FGA', 'FTM', 'FTA', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'PTS']]
+        self.curr_game_log = self.data_retriever.get_game_log(player_id, season, season_type)
         if self.curr_game_log.empty:
             print("No game log found for player.")
             # clear table
