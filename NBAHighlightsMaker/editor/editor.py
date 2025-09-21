@@ -1,3 +1,9 @@
+"""Concatenates video clips together to create a final output video.
+
+This module defines the MyProgressBarLogger class for logging the progress of the video editing
+on the UI, and the VideoMaker class for combining video clips into a final video.
+"""
+
 from moviepy.editor import TextClip, VideoFileClip, CompositeVideoClip, concatenate_videoclips
 from moviepy.video.fx.all import fadein, fadeout
 #import sys
@@ -11,35 +17,74 @@ from PySide6.QtCore import Signal, QObject
 #from NBAHighlightsMaker.players.getplayers import read_event_ids
 
 class MyProgressBarLogger(QObject, ProgressBarLogger):
+    """Custom progress bar logger for MoviePy updating progress in the UI and handling potential cancel from user.
+
+    This class extends QObject to emit a signal to update the UI and ProgressBarLogger as it is used by MoviePy to log progress.
+
+    Attributes:
+        progress_bar_values (Signal): Signal emitting progress percentage and description.
+        min_time_interval (float): Minimum time interval between progress updates.
+        cancelled (bool): Flag indicating if the process has been cancelled.
+    """
     progress_bar_values = Signal(int, str)
     def __init__(self):
         super().__init__()
         self.min_time_interval = 1.0
-        #self.update_progress_bar = update_progress_bar
         self.cancelled = False
 
     def bars_callback(self, bar, attr, value, old_value=None):
-        try:
-            if self.cancelled:
-                print("Bars callback raised exception for cancelling print.")
-                raise IOError("Bars callback raise exception for cancelling.")
-            if bar == 't' and attr == 'index':
-                total = self.bars[bar]['total']
-                percent = int((value / total) * 100)
-                # value and total are in frames, so convert to seconds
-                self.progress_bar_values.emit(percent, f"Editing - {percent}% : {(value / 60):.1f}s / {(total / 60):.1f}s")
-        except IOError as e:
-            print(f"IOError caught in bars_callback: {e}")
-            self.cancelled = False
+        """Callback to update progress bars in the UI.
+
+        Emits a signal with progress percentage and a description every "min_time_interval" seconds. This signal
+        is used by the VideoMaker class to update the progress bar in the UI.
+
+        Args:
+            bar (str): The type of the progress bar (i.e chunk, or t).
+            attr (str): The attribute being updated (i.e index: the current number elapsed of "bar").
+            value (int): The current value of the attr.
+            old_value (int, optional): The previous value of the attr.
+
+        """
+        # try:
+        #     if self.cancelled:
+        #         print("Bars callback raised exception for cancelling print.")
+        #         #raise KeyboardInterrupt("Bars callback raise exception for cancelling.")
+        #     if bar == 't' and attr == 'index':
+        #         total = self.bars[bar]['total']
+        #         percent = int((value / total) * 100)
+        #         # value and total are in frames, so convert to seconds
+        #         self.progress_bar_values.emit(percent, f"Editing - {percent}% : {(value / 60):.1f}s / {(total / 60):.1f}s")
+        # except KeyboardInterrupt as e:
+        #     print(f"KeyboardInterrupt caught in bars_callback: {e}")
+        #     self.cancelled = False
+        # print(f"Bar: {bar}, Attr: {attr}, Value: {value}, Old Value: {old_value}")
+        if bar == 't' and attr == 'index':
+            total = self.bars[bar]['total']
+            percent = int((value / total) * 100)
+            # value and total are in frames, so convert to seconds
+            self.progress_bar_values.emit(percent, f"Editing - {percent}% : {(value / 60):.1f}s / {(total / 60):.1f}s")
 
     def cancel(self):
+        """Sets the cancelled flag to True, triggering cancellation of the process the next time bars_callback is called.
+        """
         self.cancelled = True
         print("Logger cancellation triggered.")
         
 #organize files in video created date
 class VideoMaker():
-    def __init__(self, update_progress_bar):
-        self.data_dir = os.path.join(os.getcwd(), 'data', 'vids')
+    """
+    Concatenates video clips and saves the final edited video.
+
+    Args:
+        update_progress_bar (Callable): Function to update the progress bar in the UI.
+        data_dir (str): Directory where video clips are stored.
+
+    Attributes:
+        data_dir (str): Directory where video clips are stored.
+        logger (MyProgressBarLogger): Custom logger to update the progress bar UI and allow for cancelling the video editing.
+    """
+    def __init__(self, update_progress_bar, data_dir):
+        self.data_dir = data_dir
         self.logger = MyProgressBarLogger()
         self.logger.progress_bar_values.connect(update_progress_bar)
 
@@ -50,6 +95,9 @@ class VideoMaker():
         return sorted_clips_paths
     
     def cancel_editing(self):
+        """
+        Cancels the editing process by using the logger's cancellation method.
+        """
         # cancel the editing process
         self.logger.cancel()
         print("Editing cancelled by user (cancel_editing called).")
@@ -90,7 +138,7 @@ class VideoMaker():
         for clip_path in clips_paths:
             event_num = int(clip_path.split('.')[0])
             full_clip_path = os.path.join(data_dir, clip_path)
-            desc = event_ids.loc[event_ids['EVENTNUM'] == event_num, 'DESCRIPTION'].values[0]
+            desc = event_ids.loc[event_ids['EVENTNUM'] == event_num, 'HOMEDESCRIPTION'].values[0]
             #make into videoClip
             clip = self.create_video_clip(full_clip_path)
             #make text overlay
@@ -102,6 +150,8 @@ class VideoMaker():
         return composite_clips
 
     def terminate_ffmpeg_processes(self):
+        """Terminates the FFmpeg process used by Moviepy.
+        """
         for proc in psutil.process_iter(['pid', 'name']):
             if proc.info['name'] == 'ffmpeg-win-x86_64-v7.1.exe':
                 print(f"Terminating FFmpeg process: {proc.info['pid']} : {proc.info['name']}")
@@ -109,6 +159,18 @@ class VideoMaker():
     
     # concatenate all composite clips
     async def make_final_vid(self, clip_paths):
+        """
+        Concatenates video clips and writes the final video file.
+
+        From a list of video clip paths, this function creates the video clip objects for each clip,
+        concatenates them into a single video, and writes the file to disk.
+
+        Args:
+            clip_paths (list): List of video clip file paths, usually from the event_ids dataframe.
+
+        Raises:
+            Exception: For unexpected errors during video creation.    
+        """
         clips = None
         final_vid = None
         
@@ -118,9 +180,9 @@ class VideoMaker():
             final_vid = concatenate_videoclips(clips, method="chain")
             path = os.path.join(self.data_dir, "final_vid.mp4")
             await asyncio.to_thread(final_vid.write_videofile, path, codec='libx264', temp_audiofile='temp-audio.mp3', fps=60, logger=self.logger)
-        except asyncio.CancelledError:
-            print("Caught asyncio.CancelledError in make_final_vid.")
-            raise  
+        # except asyncio.CancelledError:
+        #     print("Caught asyncio.CancelledError in make_final_vid.")
+        #     #raise  
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
             raise
@@ -132,10 +194,11 @@ class VideoMaker():
                     clip.close()
             if final_vid:
                 final_vid.close()
-            self.terminate_ffmpeg_processes()
-            #await asyncio.sleep(0.1)
+            #self.terminate_ffmpeg_processes()
+            await asyncio.sleep(0.5)
             if os.path.exists(os.path.join("temp-audio.mp3")):
                 os.remove(os.path.join("temp-audio.mp3"))
+                print("Deleted the temp audio file")
             self.logger.cancelled = False
             #return final_vid
             

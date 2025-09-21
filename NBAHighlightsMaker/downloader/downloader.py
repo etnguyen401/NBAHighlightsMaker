@@ -1,3 +1,10 @@
+"""Downloads the video clips from the NBA website.
+
+This module contains the class Downloader, which handles the downloading of video clips
+and updating the dataframe with the file paths of the downloaded videos.
+
+"""
+
 # import sys
 import os
 import asyncio
@@ -13,8 +20,23 @@ import random
 #IN FUTURE, LET USER SPECIFY WHERE TO DOWNLOAD?
 
 class Downloader():
-    def __init__(self, ua):
-        self.data_dir = os.path.join(os.getcwd(), 'data', 'vids')
+    """Handles the downloading of video clips from the NBA website.
+
+    This class downloads video clips asynchronously using aiohttp, with a 
+    limit of two concurrent downloads to avoid rate limiting. Once a video is downloaded,
+    the file path of the downloaded video is updated in the dataframe.
+
+    Args:
+        ua (UserAgent): UserAgent object from fake_useragent to generate random user agent strings.
+        data_dir (str): Directory path for storing data files for future use.
+        
+    Attributes:
+        ua (UserAgent): UserAgent object from fake_useragent to generate random user agent strings.
+        headers (dict): HTTP headers used for requests to download videos from the links.
+        counter (int): Counter for tracking downloaded files.
+    """
+    def __init__(self, ua, data_dir):
+        self.data_dir = data_dir
         os.makedirs(self.data_dir, exist_ok=True)
         # UserAgent object for random user agent
         self.ua = ua
@@ -26,6 +48,25 @@ class Downloader():
     async def download_file(self, session, event_ids, row,
                             file_path, update_progress_bar,
                             semaphore, lock):
+        """Asynchronously downloads the video download link.
+
+        Generates a random user agent, sleeps for a random duration to stagger requests, and limits
+        how many requests are happening at a time using a semaphore. Then downloads the video
+        and updates the progress bar. If the request fails, the error message is saved for that try
+        and this process is retried until max_retries is exceeded.
+
+        Args:
+            session (aiohttp.ClientSession): A session object used for the HTTP requests.
+            event_ids (pandas.DataFrame): DataFrame to update with video links and the description.
+            row (pandas.Series): Row of data for the event containing EVENTNUM, etc.
+            file_path (str): Path to the file where the video will be saved.
+            update_progress_bar (Callable): Function to update the progress bar in the UI.
+            semaphore (asyncio.Semaphore): Semaphore to limit concurrent downloads.
+            lock (asyncio.Lock): Lock to update the counter and dataframe event_ids safely.
+
+        Raises:
+            Exception: If maximum retries are exceeded for a request, raises an exception with details.
+        """
         retry_count = 0
         error_msg_string = ''
         while retry_count < 3:
@@ -83,6 +124,29 @@ class Downloader():
         raise Exception(f"Max retries exceeded while getting link for event {row.EVENTNUM}: {row.HOMEDESCRIPTION}.\n\n{error_msg_string}")
         
     async def download_files(self, event_ids, update_progress_bar):
+        """Create a task for each event to fetch video download links and execute the tasks.
+
+        Creates a ClientSession, and using that, creates a task for each event to download the video from the respective link.
+        The tasks are then run concurrently, but limited by a semaphore so only two downloads happen at a time,
+        and the event_ids DataFrame is updated with the file path of each downloaded video.
+
+        Args:
+            event_ids (pandas.DataFrame): DataFrame of event IDs.
+            update_progress_bar (Callable): Function to update the progress bar.
+
+        Returns:
+            pandas.DataFrame: DataFrame with the following columns:
+                - EVENTNUM (int): Unique event number for an event in the game.
+                - EVENTMSGTYPE (int): Type of event (i.e field goal, rebound).
+                - HOMEDESCRIPTION (str): Description of the event from the home team's perspective.
+                - PLAYER1_ID (int): ID of the first player involved in the event.
+                - PLAYER2_ID (int): ID of the second player involved in the event.
+                - PLAYER3_ID (int): ID of the third player involved in the event.
+                - VIDEO_AVAILABLE_FLAG (int): Represent if video is available for the event or not.
+                - VIDEO_LINK (str): The download link for the event.
+                - DESCRIPTION (str): The description of the event, with both perspectives.
+                - FILE_PATH (str): The file path where the video will be saved at.
+        """
         event_ids['FILE_PATH'] = ''
         event_ids = event_ids.reset_index(drop=True)
         connector = aiohttp.TCPConnector(limit=0)

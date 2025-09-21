@@ -1,3 +1,13 @@
+"""Main window container for NBAHighlightsMaker.
+
+Defines the HighlightsUI class, an extension of QMainWindow,
+which sets up the main application window and other widgets that 
+are within that window.
+
+Typical usage example:
+    from NBAHighlightsMaker.ui.ui import HighlightsUI
+    window = HighlightsUI(data_retriever, downloader, data_dir)
+"""
 #import sys
 from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QLabel, QWidget
 #from PySide6.QtCore import Qt, QStringListModel
@@ -8,10 +18,21 @@ from NBAHighlightsMaker.ui.player_search import PlayerSearchBox
 from NBAHighlightsMaker.ui.game_log_table import GameLogTable
 
 class HighlightsUI(QMainWindow):
+    """Main window for the application.
+
+    Sets up the main window and its child widgets:  
+    The player search and the game log table widgets.
+
+    Args:
+        data_retriever (DataRetriever): Used to get player and game data.
+        downloader (Downloader): Used to download video clips.
+
+    Attributes:
+        layout (QVBoxLayout): The main vertical box layout for the application.
+        player_search_widget (PlayerSearchBox): The widget for entering information on the desired player and game.
+        table_widget (GameLogTable): The widget for displaying the game log, arranged in a table.
     """
-    Main window that creates the other widgets and adds them to the layout. 
-    """
-    def __init__(self, data_retriever, downloader):
+    def __init__(self, data_retriever, downloader, data_dir):
         super().__init__()
         self.setWindowTitle("NBAHighlightsMaker")
         icon = QIcon("./resources/icon.png")
@@ -32,7 +53,7 @@ class HighlightsUI(QMainWindow):
         # player_search_label.setBuddy(self.player_search_widget)
         
         # make table widget
-        self.table_widget = GameLogTable(data_retriever, downloader)
+        self.table_widget = GameLogTable(data_retriever, downloader, data_dir)
         game_log_label = QLabel("Game Log:")
         game_log_label.setBuddy(self.table_widget)
 
@@ -48,11 +69,3 @@ class HighlightsUI(QMainWindow):
         container = QWidget()
         container.setLayout(self.layout)
         self.setCentralWidget(container)
-
-        
-
-# if __name__ == "__main__":
-#     app = QApplication(sys.argv)
-#     window = HighlightsUI()
-#     window.show()
-#     sys.exit(app.exec())
