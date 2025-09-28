@@ -5,22 +5,46 @@ game logs using the nba_api library. It also gets the links for the different
 clips of the events the user wants to see. 
 
 """
-
+import time 
 import os
 import random
+start = time.time()
 from nba_api.stats.static import players
+print("nba_api stats static import:", time.time() - start)
+start = time.time()
 from nba_api.stats.library.parameters import Season
+print("nba_api stats season import:", time.time() - start)
+start = time.time()
 from nba_api.stats.library.parameters import SeasonType
-from nba_api.stats.endpoints import playergamelog
-from nba_api.stats.endpoints import playbyplayv2
+print("nba_api stats season type import:", time.time() - start)
+# from nba_api.stats.endpoints import playergamelog
+start = time.time()
+import nba_api.stats.endpoints.playergamelog as playergamelog
+print("nba_api stats playergamelog import:", time.time() - start)
+# from nba_api.stats.endpoints import playbyplayv2
+start = time.time()
+import nba_api.stats.endpoints.playbyplayv2 as playbyplayv2
+print("nba_api stats playbyplayv2 import:", time.time() - start)
+
 #from nba_api.stats.endpoints import videoeventsasset
+start = time.time()
 import pandas as pd
+print("pandas import:", time.time() - start)
+start = time.time()
 import requests
-import time 
+print("requests import:", time.time() - start)
+start = time.time()
 import asyncio
+print("asyncio import:", time.time() - start)
+start = time.time()
 import aiohttp
+print("aiohttp import:", time.time() - start)
+start = time.time()
 from urllib3.util import Retry
+print("urllib3 import:", time.time() - start)
+start = time.time()
 from requests.adapters import HTTPAdapter
+print("requests import:", time.time() - start)
 
 
 class DataRetriever:
@@ -436,15 +460,23 @@ class DataRetriever:
         nba_players[:5]
 
 def main():
-    nba_data_retriever = DataRetriever()
-    active_players = nba_data_retriever.get_all_players()
+    start = time.time()
+    from fake_useragent import UserAgent
+    ua = UserAgent()
+    data_dir = os.path.join(os.getcwd(), 'data', 'vids')
+    nba_data_retriever = DataRetriever(ua, data_dir)
+    #active_players = nba_data_retriever.get_all_players()
     # player_id = nba_data_retriever.get_player_id('Kevin Durant')
-    # game_log = nba_data_retriever.get_game_log(player_id)
+    #game_log = nba_data_retriever.get_game_log(201142, season = '2020-21', season_type = 'Regular Season')
+    #game_log.to_csv('test_game_log.csv', index = False)
+    
     # game_id = nba_data_retriever.get_game_id(game_log)
     # print("Game ID: ", game_id)
-    # event_ids = nba_data_retriever.get_event_ids(game_id, player_id)
+    event_ids = nba_data_retriever.get_event_ids('0022100001', 201142, {1, 2, 3, 4, 5, 6, 7, 8})
+    event_ids.to_csv('test_event_ids.csv', index = False)
     # dl_links = nba_data_retriever.get_download_links(game_id, event_ids)
-    
+    print("Time taken to get event IDs: ", time.time() - start)
+
 if __name__ == '__main__':
     # test()
     main()

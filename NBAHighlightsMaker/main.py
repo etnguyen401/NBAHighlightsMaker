@@ -19,6 +19,7 @@ from NBAHighlightsMaker.ui.ui import HighlightsUI
 from PySide6.QtWidgets import QApplication
 import time
 
+
 def startup():
     """Initializes the NBA Highlights Maker application.
 

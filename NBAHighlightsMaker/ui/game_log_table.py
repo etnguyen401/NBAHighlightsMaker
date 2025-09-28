@@ -1,11 +1,11 @@
 """Widget displaying a game log, allowing the user to select a game and actions to create a video of all relevant events.
 
-This module contains the GameLogTable class, a widget which displays the game log, a list of games
-the selected player participated in. The user can select a game from the table, which highlights that row.
-They then can select which event types they want to include in the video, which filters the list of events
-from that game. When a game is selected, the "Create Video" button is enabled, allowing the user to start the 
-process of downloading all of the clips and stitching them together to form one video. Once the process is completed,
-a pop-up will inform the user that the video has been created and if they want to open it immediately.
+This module contains the GameLogTable class, a widget which displays a list of all games
+the selected player participated in. The user can select a game from the table and
+which event types they want to include in the video. When a game is selected, the "Create Video" 
+button is enabled, allowing the user to start the process of downloading all of the clips and 
+stitching them together to form one video. Once the process is completed, a pop-up will inform 
+the user that the video has been created and if they want to open it immediately.
 
 """
 
@@ -253,8 +253,8 @@ class GameLogTable(QWidget):
     def cleanup(self):
         """Resets UI elements to their initial state.
 
-        Re-enable the create video button, remove the progress bar updates on the UI,
-        disable the cancel button, and reset any internal flags.
+        Re-enables the create video button, removes the progress bar updates on the UI,
+        disables the cancel button, and resets any internal flags.
         """
         # if self.get_links_task:
         #     self.get_links_task.cancel()
@@ -311,12 +311,12 @@ class GameLogTable(QWidget):
             print("Creating video task cancelled.")
 
     async def handle_create_vid_click(self):
-        """Get event links, download all clips needed, and stitch them together.
+        """Gets event links, downloads all clips needed, and stitches them together.
 
-        Clear the data directory, filter the needed events using what the user selected,
-        get links to all of these events and download them, and concatenate the clips together.
-        During this whole process, update the user with progress information. Once the video is
-        completed, inform the user that the video has been created successfully.
+        Clears the data directory, filters the needed events using what the user selected,
+        gets links to all of these events and downloads them, and concatenates the clips together.
+        During this whole process, the user is updated with progress information. Once the video is
+        completed, the user is informed that the video has been created successfully.
 
         Raises:
             Exception: If any step fails, display a message box to the user and cleans up UI state.
