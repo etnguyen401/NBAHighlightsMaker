@@ -104,16 +104,16 @@ class VideoMaker():
         print("Editing cancelled by user (cancel_editing called).")
 
     # given a videoFileClip from moviepy, make a text overlay and return it
-    def create_overlay(self, string):
-        txt_clip = TextClip(font= './resources/Boldonse-Regular.ttf',
-                                    text = string, 
-                                    font_size = 20, 
-                                    color = 'white', 
-                                    text_align = 'center',
-                                    duration = 3,
-        )
-        #txt_clip = txt_clip.with_position(('bottom', 'right'))
-        return txt_clip
+    # def create_overlay(self, string):
+    #     txt_clip = TextClip(font= './resources/Boldonse-Regular.ttf',
+    #                                 text = string, 
+    #                                 font_size = 20, 
+    #                                 color = 'white', 
+    #                                 text_align = 'center',
+    #                                 duration = 3,
+    #     )
+    #     #txt_clip = txt_clip.with_position(('bottom', 'right'))
+    #     return txt_clip
 
     # def create_video_clip(self, clip_path):
     #     clip = VideoFileClip(clip_path, target_resolution = (720, 1280))
@@ -144,21 +144,21 @@ class VideoMaker():
 
     # make each clip into a videoFileClip, and call create overlay to get the text clip
     # then make a composite videoFileClip
-    def create_composite_clips(self, event_ids, clips_paths, data_dir):
-        #get pd dataframe of the descriptions for each clip
-        composite_clips = []
-        #for each clip path
-        for clip_path in clips_paths:
-            event_num = int(clip_path.split('.')[0])
-            full_clip_path = os.path.join(data_dir, clip_path)
-            desc = event_ids.loc[event_ids['EVENTNUM'] == event_num, 'HOMEDESCRIPTION'].values[0]
-            #make into videoClip
-            clip = self.create_video_clip(full_clip_path)
-            #make text overlay
-            txt_clip = self.create_overlay(desc)
-            #make it a composite video
-            composite_clip = CompositeVideoClip([clip, txt_clip])
-            composite_clips.append(composite_clip)
+    # def create_composite_clips(self, event_ids, clips_paths, data_dir):
+    #     #get pd dataframe of the descriptions for each clip
+    #     composite_clips = []
+    #     #for each clip path
+    #     for clip_path in clips_paths:
+    #         event_num = int(clip_path.split('.')[0])
+    #         full_clip_path = os.path.join(data_dir, clip_path)
+    #         desc = event_ids.loc[event_ids['EVENTNUM'] == event_num, 'HOMEDESCRIPTION'].values[0]
+    #         #make into videoClip
+    #         clip = self.create_video_clip(full_clip_path)
+    #         #make text overlay
+    #         txt_clip = self.create_overlay(desc)
+    #         #make it a composite video
+    #         composite_clip = CompositeVideoClip([clip, txt_clip])
+    #         composite_clips.append(composite_clip)
         
         return composite_clips
 

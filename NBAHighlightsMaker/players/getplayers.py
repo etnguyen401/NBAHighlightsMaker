@@ -30,8 +30,8 @@ start = time.time()
 import pandas as pd
 print("pandas import:", time.time() - start)
 start = time.time()
-import requests
-print("requests import:", time.time() - start)
+# import requests
+# print("requests import:", time.time() - start)
 start = time.time()
 import asyncio
 print("asyncio import:", time.time() - start)
@@ -39,11 +39,11 @@ start = time.time()
 import aiohttp
 print("aiohttp import:", time.time() - start)
 start = time.time()
-from urllib3.util import Retry
-print("urllib3 import:", time.time() - start)
-start = time.time()
-from requests.adapters import HTTPAdapter
-print("requests import:", time.time() - start)
+# from urllib3.util import Retry
+# print("urllib3 import:", time.time() - start)
+# start = time.time()
+# from requests.adapters import HTTPAdapter
+# print("requests import:", time.time() - start)
 
 
 class DataRetriever:
@@ -397,65 +397,65 @@ class DataRetriever:
 
             
     
-    async def get_download_links(self, game_id, event_ids, update_progress_bar):
-        # add another column to event_ids for the download link
-        event_ids['VIDEO_LINK'] = ''
-        event_ids['DESCRIPTION'] = ''
-        session = requests.Session()
-        session.headers.update(self.headers)
-        retry_settings = Retry(
-            total = 5,
-            backoff_factor = 0.5
-        )
-        adapter = HTTPAdapter(max_retries = retry_settings)
-        session.mount('https://', adapter)
-        # for each event id
-        for index, event_id in enumerate(event_ids['EVENTNUM']):
-            # get the download link and description
-            #video_event = get_download_link(event_id, game_id)
-            url = 'https://stats.nba.com/stats/videoeventsasset?GameEventID={}&GameID={}'.format(event_id, game_id)
-            # randomize user agent
-            # self.headers['User-Agent'] = random.choice(self.user_agents)
+    # async def get_download_links(self, game_id, event_ids, update_progress_bar):
+    #     # add another column to event_ids for the download link
+    #     event_ids['VIDEO_LINK'] = ''
+    #     event_ids['DESCRIPTION'] = ''
+    #     session = requests.Session()
+    #     session.headers.update(self.headers)
+    #     retry_settings = Retry(
+    #         total = 5,
+    #         backoff_factor = 0.5
+    #     )
+    #     adapter = HTTPAdapter(max_retries = retry_settings)
+    #     session.mount('https://', adapter)
+    #     # for each event id
+    #     for index, event_id in enumerate(event_ids['EVENTNUM']):
+    #         # get the download link and description
+    #         #video_event = get_download_link(event_id, game_id)
+    #         url = 'https://stats.nba.com/stats/videoeventsasset?GameEventID={}&GameID={}'.format(event_id, game_id)
+    #         # randomize user agent
+    #         # self.headers['User-Agent'] = random.choice(self.user_agents)
             
-            # test = self.ua.random
-            # print("Generated User-Agent: ", test)
-            # # update session headers with random user agent
-            # session.headers.update({'User-Agent': test})
-            session.headers.update({'User-Agent': random.choice(self.user_agents)})
-            print("Session headers: ", session.headers)
-            try:
-                print("Requesting for event id: ", event_id)
-                r = session.get(url, headers = self.headers, timeout = 10)
-                # check if request was successful
-                r.raise_for_status()
-                # convert to json
-                r_json = r.json()
-                video_link = r_json['resultSets']['Meta']['videoUrls'][0]['lurl']
-                desc = r_json['resultSets']['playlist'][0]['dsc']
-                video_event = {'video': video_link, 'desc': desc}
-                # add the link and description to event_ids
-                # 1st part of loc filters rows, 2nd part is for columns
-                event_ids.loc[event_ids['EVENTNUM'] == event_id, 'VIDEO_LINK'] = video_event['video']
-                event_ids.loc[event_ids['EVENTNUM'] == event_id, 'DESCRIPTION'] = video_event['desc']
-                # sleep
-                value = int((index + 1) / len(event_ids) * 100)
-                update_progress_bar(value, "Get link for: {}".format(video_event['desc']))
-                print("Sleeping...")
-                await asyncio.sleep(random.uniform(1.2, 2.0))
-            except requests.exceptions.HTTPError as e:
-                print("HTTP error: ", e)
-            except requests.exceptions.ConnectionError as e:
-                print("Connection error: ", e)
-            except requests.exceptions.Timeout as e:
-                print("Timeout error: ", e)
-            except requests.exceptions.RequestException as e:
-                print("Something else error: ", e)
+    #         # test = self.ua.random
+    #         # print("Generated User-Agent: ", test)
+    #         # # update session headers with random user agent
+    #         # session.headers.update({'User-Agent': test})
+    #         session.headers.update({'User-Agent': random.choice(self.user_agents)})
+    #         print("Session headers: ", session.headers)
+    #         try:
+    #             print("Requesting for event id: ", event_id)
+    #             r = session.get(url, headers = self.headers, timeout = 10)
+    #             # check if request was successful
+    #             r.raise_for_status()
+    #             # convert to json
+    #             r_json = r.json()
+    #             video_link = r_json['resultSets']['Meta']['videoUrls'][0]['lurl']
+    #             desc = r_json['resultSets']['playlist'][0]['dsc']
+    #             video_event = {'video': video_link, 'desc': desc}
+    #             # add the link and description to event_ids
+    #             # 1st part of loc filters rows, 2nd part is for columns
+    #             event_ids.loc[event_ids['EVENTNUM'] == event_id, 'VIDEO_LINK'] = video_event['video']
+    #             event_ids.loc[event_ids['EVENTNUM'] == event_id, 'DESCRIPTION'] = video_event['desc']
+    #             # sleep
+    #             value = int((index + 1) / len(event_ids) * 100)
+    #             update_progress_bar(value, "Get link for: {}".format(video_event['desc']))
+    #             print("Sleeping...")
+    #             await asyncio.sleep(random.uniform(1.2, 2.0))
+    #         except requests.exceptions.HTTPError as e:
+    #             print("HTTP error: ", e)
+    #         except requests.exceptions.ConnectionError as e:
+    #             print("Connection error: ", e)
+    #         except requests.exceptions.Timeout as e:
+    #             print("Timeout error: ", e)
+    #         except requests.exceptions.RequestException as e:
+    #             print("Something else error: ", e)
         
-        # update our file
-        # event_ids.to_csv('event_ids.csv', index = False)
-        print("Download links added to dataframe.")
-        session.close()
-        return event_ids
+    #     # update our file
+    #     # event_ids.to_csv('event_ids.csv', index = False)
+    #     print("Download links added to dataframe.")
+    #     session.close()
+    #     return event_ids
 
     # def test():
     #     nba_players = players.get_players()
