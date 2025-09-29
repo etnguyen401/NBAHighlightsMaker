@@ -10,8 +10,7 @@ the user that the video has been created and if they want to open it immediately
 """
 
 
-from PySide6.QtCore import Qt, Signal, QObject
-from proglog import ProgressBarLogger
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QCheckBox, QPushButton, QTableWidget, QWidget, QTableWidgetItem, QMessageBox
 from NBAHighlightsMaker.editor.editor import VideoMaker
 from NBAHighlightsMaker.common.enums import EventMsgType

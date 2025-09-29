@@ -9,21 +9,20 @@ import time
 import os
 import random
 start = time.time()
-from nba_api.stats.static import players
-print("nba_api stats static import:", time.time() - start)
-start = time.time()
-from nba_api.stats.library.parameters import Season
-print("nba_api stats season import:", time.time() - start)
-start = time.time()
-from nba_api.stats.library.parameters import SeasonType
-print("nba_api stats season type import:", time.time() - start)
+
+# print("nba_api stats static import:", time.time() - start)
+# start = time.time()
+# from nba_api.stats.library.parameters import Season
+# print("nba_api stats season import:", time.time() - start)
+# start = time.time()
+# from nba_api.stats.library.parameters import SeasonType
+# print("nba_api stats season type import:", time.time() - start)
 # from nba_api.stats.endpoints import playergamelog
 start = time.time()
-import nba_api.stats.endpoints.playergamelog as playergamelog
 print("nba_api stats playergamelog import:", time.time() - start)
 # from nba_api.stats.endpoints import playbyplayv2
 start = time.time()
-import nba_api.stats.endpoints.playbyplayv2 as playbyplayv2
+
 print("nba_api stats playbyplayv2 import:", time.time() - start)
 
 #from nba_api.stats.endpoints import videoeventsasset
@@ -102,6 +101,7 @@ class DataRetriever:
 
     def get_active_players(self):
         if not os.path.exists('players.csv'):
+            from nba_api.stats.static import players
             nba_players = players.get_players()
             df = pd.DataFrame(nba_players)
             active_players = df[df['is_active'] == True]
@@ -124,6 +124,7 @@ class DataRetriever:
         file_path = os.path.join(self.data_dir, 'players_all.csv')
         
         if not os.path.exists(file_path):
+            from nba_api.stats.static import players
             nba_players = players.get_players()
             df = pd.DataFrame(nba_players)[['id', 'full_name']]
             df.to_csv(file_path, index = False)
@@ -149,7 +150,7 @@ class DataRetriever:
             time.sleep(1)
             return player.iloc[0]['id']
         
-    def get_game_log(self, player_id, season = Season.default, season_type = SeasonType.regular):  
+    def get_game_log(self, player_id, season, season_type):  
         """Retrieves a list of games played for a given player, year, and season type.
 
         Args:
@@ -176,7 +177,7 @@ class DataRetriever:
                 - PF (int): Personal fouls.
                 - PTS (int): Total points scored.
         """
-
+        import nba_api.stats.endpoints.playergamelog as playergamelog
         game_log = playergamelog.PlayerGameLog(player_id = player_id, season = season, season_type_all_star = season_type)
         game_log = game_log.get_data_frames()[0]
         
@@ -189,8 +190,9 @@ class DataRetriever:
         
         return game_log
     
-    def save_game_log(self, player_id, season = Season.default, season_type = SeasonType.regular):
+    def save_game_log(self, player_id, season, season_type):
         if not os.path.exists('game_log.csv'):
+            import nba_api.stats.endpoints.playergamelog as playergamelog
             game_log = playergamelog.PlayerGameLog(player_id = player_id, season = season, season_type_all_star = season_type)
             game_log = game_log.get_data_frames()[0]
             game_log.to_csv('game_log.csv', index = False)
@@ -224,6 +226,7 @@ class DataRetriever:
                 - VIDEO_AVAILABLE_FLAG (int): Represent if video is available for the event or not.
 
         """
+        import nba_api.stats.endpoints.playbyplayv2 as playbyplayv2
         event_ids = playbyplayv2.PlayByPlayV2(game_id = game_id)
         event_ids = event_ids.get_data_frames()[0]
         # player2 id would be when something bad happens to player2
@@ -454,10 +457,10 @@ class DataRetriever:
         session.close()
         return event_ids
 
-    def test():
-        nba_players = players.get_players()
-        print("Number of players fetched: {}".format(len(nba_players)))
-        nba_players[:5]
+    # def test():
+    #     nba_players = players.get_players()
+    #     print("Number of players fetched: {}".format(len(nba_players)))
+    #     nba_players[:5]
 
 def main():
     start = time.time()

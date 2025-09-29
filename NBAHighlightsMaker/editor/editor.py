@@ -4,11 +4,12 @@ This module defines the MyProgressBarLogger class for logging the progress of th
 on the UI, and the VideoMaker class for combining video clips into a final video.
 """
 
-from moviepy.editor import TextClip, VideoFileClip, CompositeVideoClip, concatenate_videoclips
-from moviepy.video.fx.all import fadein, fadeout
+# from moviepy.editor import TextClip, VideoFileClip, CompositeVideoClip, concatenate_videoclips
+
 #import sys
 import os
 import asyncio
+from numpy import clip
 import psutil
 from proglog import ProgressBarLogger
 from PySide6.QtCore import Signal, QObject
@@ -114,17 +115,29 @@ class VideoMaker():
         #txt_clip = txt_clip.with_position(('bottom', 'right'))
         return txt_clip
 
-    def create_video_clip(self, clip_path):
-        clip = VideoFileClip(clip_path, target_resolution = (720, 1280))
-        clip = fadein(clip, duration=1)
-        clip = clip.fadeout(duration=1)
-        return clip
+    # def create_video_clip(self, clip_path):
+    #     clip = VideoFileClip(clip_path, target_resolution = (720, 1280))
+    #     clip = fadein(clip, duration=1)
+    #     clip = clip.fadeout(duration=1)
+    #     return clip
 
     async def create_video_clips(self, clip_paths):
-        new_clips = []
+        """Creates VideoFileClip objects from file paths with fade-in and fade-out effects.
+        
+        Args:
+            clip_paths (list): List of video clip file paths.
 
+        Returns:
+            list: List of VideoFileClip objects.
+        """
+        new_clips = []
+        # lazy loading
+        from moviepy.video.fx.all import fadein, fadeout
+        from moviepy.editor import VideoFileClip
         for clip_path in clip_paths:
-            clip = self.create_video_clip(clip_path)
+            clip = VideoFileClip(clip_path, target_resolution = (720, 1280))
+            clip = fadein(clip, duration=1)
+            clip = clip.fadeout(duration=1)
             new_clips.append(clip)
         
         return new_clips
@@ -173,7 +186,7 @@ class VideoMaker():
         """
         clips = None
         final_vid = None
-        
+        from moviepy.editor import concatenate_videoclips
         try:
             clips = await self.create_video_clips(clip_paths)
             self.total_duration = sum([clip.duration for clip in clips])
@@ -195,7 +208,7 @@ class VideoMaker():
             if final_vid:
                 final_vid.close()
             #self.terminate_ffmpeg_processes()
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(1.0)
             if os.path.exists(os.path.join("temp-audio.mp3")):
                 os.remove(os.path.join("temp-audio.mp3"))
                 print("Deleted the temp audio file")
