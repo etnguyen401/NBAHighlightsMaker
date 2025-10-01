@@ -85,7 +85,7 @@ class VideoMaker():
         logger (MyProgressBarLogger): Custom logger to update the progress bar UI and allow for cancelling the video editing.
     """
     def __init__(self, update_progress_bar, data_dir):
-        self.data_dir = data_dir
+        self.data_dir = os.path.join(data_dir, 'vids')
         self.logger = MyProgressBarLogger()
         self.logger.progress_bar_values.connect(update_progress_bar)
 

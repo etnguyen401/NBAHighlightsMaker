@@ -26,7 +26,7 @@ def startup():
     """
     app = QApplication(sys.argv)
     
-    data_dir = os.path.join(os.getcwd(), 'data', 'vids')
+    data_dir = os.path.join(os.getcwd(), 'data')
     # integrated event loop for pyside loop and asyncio's loop
     loop = QEventLoop(app)
     

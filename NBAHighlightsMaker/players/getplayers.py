@@ -44,7 +44,7 @@ class DataRetriever:
         }
         self.ua = ua
         self.counter = 0
-        self.data_dir = data_dir
+        self.data_dir = os.path.join(data_dir, 'csv')
 
     def get_active_players(self):
         if not os.path.exists('players.csv'):
@@ -78,9 +78,7 @@ class DataRetriever:
             print('All Players data created.')
             return df
         else:
-            start = time.time()
             all_players = pd.read_csv(file_path)
-            print(f"Time taken to read all players from CSV: {time.time() - start} seconds")
             print('All Players data already exists.')
             return all_players
     

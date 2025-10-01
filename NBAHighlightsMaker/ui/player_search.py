@@ -37,10 +37,9 @@ class PlayerSearchBox(QWidget):
     def __init__(self, data_retriever):
         super().__init__()
         
-        self.search_box_label = QLabel("Search for a Player:")
+        self.search_box_label = QLabel("Type/Select Player Name:")
         self.search_box = QComboBox(self)
         self.search_box.setEditable(True)
-        self.search_box.setPlaceholderText("Type or select a player's name...")
         self.data_retriever = data_retriever
 
         # get players and fill box with them

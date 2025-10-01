@@ -36,7 +36,7 @@ class Downloader():
         counter (int): Counter for tracking downloaded files.
     """
     def __init__(self, ua, data_dir):
-        self.data_dir = data_dir
+        self.data_dir = os.path.join(data_dir, 'vids')
         os.makedirs(self.data_dir, exist_ok=True)
         # UserAgent object for random user agent
         self.ua = ua
