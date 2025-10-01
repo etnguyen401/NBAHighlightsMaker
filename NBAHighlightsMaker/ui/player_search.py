@@ -3,14 +3,9 @@
 This module takes information given by the user 
 through the UI and emits the player ID, season, and season type
 to update the GameLogTable widget with the corresponding game log.
-
 """
-
-
 from PySide6.QtWidgets import QComboBox, QCompleter, QLabel, QWidget, QVBoxLayout, QPushButton
 from PySide6.QtCore import QStringListModel, Qt, Signal
-import time
-#from NBAHighlightsMaker.players.getplayers import DataRetriever
 
 class PlayerSearchBox(QWidget):
     """Widget for selecting a player, year, and season type to find the games the user wants.
@@ -37,7 +32,7 @@ class PlayerSearchBox(QWidget):
         players (pd.DataFrame): DataFrame containing all player information.
         data_retriever (DataRetriever): DataRetriever object used to get player data.
     """
-    # make signal to emit player id when item selected
+    # make signal to emit info when load button clicked
     player_info_given = Signal(int, str, str)
     def __init__(self, data_retriever):
         super().__init__()
@@ -46,18 +41,15 @@ class PlayerSearchBox(QWidget):
         self.search_box = QComboBox(self)
         self.search_box.setEditable(True)
         self.search_box.setPlaceholderText("Type or select a player's name...")
-        #self.search_box.lineEdit().setPlaceholderText("Type or select a player's name...")
         self.data_retriever = data_retriever
 
         # get players and fill box with them
-        start = time.time()
         self.players = self.data_retriever.get_all_players()
-        end = time.time()
-        print(f"Time taken to retrieve players: {end - start} seconds")
 
         # add completer for autocomplete
         self.completer = QCompleter()
         self.completer.setCaseSensitivity(Qt.CaseInsensitive)
+        # match anywhere in string
         self.completer.setFilterMode(Qt.MatchContains)
         self.search_box.setCompleter(self.completer)
         
@@ -94,22 +86,15 @@ class PlayerSearchBox(QWidget):
 
     def update_search_box_and_completer(self) -> None:
         """Fills the search box with player names and initializes the completer.
-
         """
         player_names = self.players["full_name"].to_numpy()
         self.search_box.addItems(player_names)
 
         model = QStringListModel(player_names)
         self.completer.setModel(model)
-
-    # def emit_player_id(self, index):
-    #     # get player id, then emit it
-    #     player_id = self.players.iloc[index]['id']
-    #     self.player_selected.emit(player_id)
     
     def handle_load_button_clicked(self) -> None:
         """Gets the player ID number, season, and season type chosen by user and emits a signal with this information.
-        
         """
         player_id = self.players.iloc[self.search_box.currentIndex()]['id']
         season = self.season_box.currentText()

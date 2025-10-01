@@ -17,8 +17,6 @@ from NBAHighlightsMaker.players.getplayers import DataRetriever
 from NBAHighlightsMaker.downloader.downloader import Downloader
 from NBAHighlightsMaker.ui.ui import HighlightsUI
 from PySide6.QtWidgets import QApplication
-import time
-
 
 def startup():
     """Initializes the NBA Highlights Maker application.
@@ -26,7 +24,6 @@ def startup():
     Initializes the Qt application and event loop, creates the data retriever and
     downloader objects, and launches the main window.
     """
-    beginning = time.time()
     app = QApplication(sys.argv)
     
     data_dir = os.path.join(os.getcwd(), 'data', 'vids')
@@ -36,31 +33,21 @@ def startup():
     # set loop as current asyncio event loop
     asyncio.set_event_loop(loop)
     
-    start = time.time()
+    # useragents from these browsers are more likely to succeed
     ua = UserAgent(browsers=['Opera', 'Safari', 'Firefox'], platforms='desktop')
-    #ua = UserAgent(browsers=['Edge'], platforms='desktop')
-    print("UserAgent:", time.time() - start)
     
-    start = time.time()
     data_retriever = DataRetriever(ua, data_dir)
-    print("DataRetriever:", time.time() - start)
     
-    start = time.time()
     downloader = Downloader(ua, data_dir)
-    print("Downloader:", time.time() - start)
     
     # make the main window
-    start = time.time()
     window = HighlightsUI(data_retriever, downloader, data_dir)
-    print("HighlightsUI:", time.time() - start)
     window.show()
 
-    # bring to front and activate window
+    # bring to front and activate window to grab attention
     window.raise_()
     window.activateWindow()
     with loop:
-        # later change this to wait for shutdown signal, then cleanup
-        print("Total startup time:", time.time() - beginning)
         sys.exit(loop.run_forever())
 
 if __name__ == "__main__":

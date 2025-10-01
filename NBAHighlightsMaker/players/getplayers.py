@@ -3,48 +3,13 @@
 This module contains the class DataRetriever, which gets player data and
 game logs using the nba_api library. It also gets the links for the different
 clips of the events the user wants to see. 
-
 """
 import time 
 import os
 import random
-start = time.time()
-
-# print("nba_api stats static import:", time.time() - start)
-# start = time.time()
-# from nba_api.stats.library.parameters import Season
-# print("nba_api stats season import:", time.time() - start)
-# start = time.time()
-# from nba_api.stats.library.parameters import SeasonType
-# print("nba_api stats season type import:", time.time() - start)
-# from nba_api.stats.endpoints import playergamelog
-start = time.time()
-print("nba_api stats playergamelog import:", time.time() - start)
-# from nba_api.stats.endpoints import playbyplayv2
-start = time.time()
-
-print("nba_api stats playbyplayv2 import:", time.time() - start)
-
-#from nba_api.stats.endpoints import videoeventsasset
-start = time.time()
 import pandas as pd
-print("pandas import:", time.time() - start)
-start = time.time()
-# import requests
-# print("requests import:", time.time() - start)
-start = time.time()
 import asyncio
-print("asyncio import:", time.time() - start)
-start = time.time()
 import aiohttp
-print("aiohttp import:", time.time() - start)
-start = time.time()
-# from urllib3.util import Retry
-# print("urllib3 import:", time.time() - start)
-# start = time.time()
-# from requests.adapters import HTTPAdapter
-# print("requests import:", time.time() - start)
-
 
 class DataRetriever:
     """Fetches NBA player data, game logs, and links for different clips.
@@ -64,11 +29,6 @@ class DataRetriever:
         data_dir (str): Directory path for storing data files for future use.
     """
     def __init__(self, ua, data_dir):
-        # self.headers = {
-        #     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0',
-        #     'x-nba-stats-origin': 'stats',
-        #     'Referer': 'https://stats.nba.com/',
-        # }
         self.headers = {
             'Host': 'stats.nba.com',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0',
@@ -82,19 +42,6 @@ class DataRetriever:
             'Pragma': 'no-cache',
             'Cache-Control': 'no-cache'
         }
-        # self.user_agents = [
-        #     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
-        #     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
-        #     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
-        #     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
-        #     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36 Edg/133.0.0.0',
-        #     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36 Edg/133.0.0.0',
-        #     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 Edg/132.0.0.0',
-        #     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-        #     'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0',
-        #     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Safari/605.1.15'
-        # ]
-        #Useragent object to make random user agents
         self.ua = ua
         self.counter = 0
         self.data_dir = data_dir
@@ -463,22 +410,21 @@ class DataRetriever:
     #     nba_players[:5]
 
 def main():
-    start = time.time()
     from fake_useragent import UserAgent
     ua = UserAgent()
     data_dir = os.path.join(os.getcwd(), 'data', 'vids')
     nba_data_retriever = DataRetriever(ua, data_dir)
-    #active_players = nba_data_retriever.get_all_players()
+    active_players = nba_data_retriever.get_active_players()
+    active_players.to_csv('all_players.csv', index = False)
     # player_id = nba_data_retriever.get_player_id('Kevin Durant')
     #game_log = nba_data_retriever.get_game_log(201142, season = '2020-21', season_type = 'Regular Season')
     #game_log.to_csv('test_game_log.csv', index = False)
     
     # game_id = nba_data_retriever.get_game_id(game_log)
     # print("Game ID: ", game_id)
-    event_ids = nba_data_retriever.get_event_ids('0022100001', 201142, {1, 2, 3, 4, 5, 6, 7, 8})
-    event_ids.to_csv('test_event_ids.csv', index = False)
+    # event_ids = nba_data_retriever.get_event_ids('0022100001', 201142, {1, 2, 3, 4, 5, 6, 7, 8})
+    # event_ids.to_csv('test_event_ids.csv', index = False)
     # dl_links = nba_data_retriever.get_download_links(game_id, event_ids)
-    print("Time taken to get event IDs: ", time.time() - start)
 
 if __name__ == '__main__':
     # test()
