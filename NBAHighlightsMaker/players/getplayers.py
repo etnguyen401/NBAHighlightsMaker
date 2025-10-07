@@ -46,20 +46,6 @@ class DataRetriever:
         self.counter = 0
         self.data_dir = os.path.join(data_dir, 'csv')
 
-    def get_active_players(self):
-        if not os.path.exists('players.csv'):
-            from nba_api.stats.static import players
-            nba_players = players.get_players()
-            df = pd.DataFrame(nba_players)
-            active_players = df[df['is_active'] == True]
-            active_players.to_csv('players.csv', index = False)
-            print('Active Players data created.')
-            return active_players
-        else:
-            active_players = pd.read_csv('players.csv')
-            print('Active Players data already exists.')
-            return active_players
-
     def get_all_players(self):
         """Retrieves a DataFrame of all NBA players in history, and saves the data.
         
@@ -82,19 +68,6 @@ class DataRetriever:
             print('All Players data already exists.')
             return all_players
     
-    def get_player_id(self, full_name):
-        if not os.path.exists('players.csv'):
-            players = self.get_active_players()
-            players = pd.read_csv('players.csv')
-            player = players[players['full_name'] == full_name]
-
-        if player.empty:
-            return None
-        else:
-            print(player.iloc[0]['id'])
-            time.sleep(1)
-            return player.iloc[0]['id']
-        
     def get_game_log(self, player_id, season, season_type):  
         """Retrieves a list of games played for a given player, year, and season type.
 
@@ -122,7 +95,7 @@ class DataRetriever:
                 - PF (int): Personal fouls.
                 - PTS (int): Total points scored.
         """
-        import nba_api.stats.endpoints.playergamelog as playergamelog
+        from nba_api.stats.endpoints import playergamelog
         game_log = playergamelog.PlayerGameLog(player_id = player_id, season = season, season_type_all_star = season_type)
         game_log = game_log.get_data_frames()[0]
         
@@ -134,24 +107,6 @@ class DataRetriever:
         game_log = game_log.reset_index(drop = True)
         
         return game_log
-    
-    def save_game_log(self, player_id, season, season_type):
-        if not os.path.exists('game_log.csv'):
-            import nba_api.stats.endpoints.playergamelog as playergamelog
-            game_log = playergamelog.PlayerGameLog(player_id = player_id, season = season, season_type_all_star = season_type)
-            game_log = game_log.get_data_frames()[0]
-            game_log.to_csv('game_log.csv', index = False)
-            return game_log
-        else:
-            #read as string so leading zeroes still there
-            game_log = pd.read_csv('game_log.csv', converters = {'Game_ID': str})
-            print("Game Log read from file.")    
-            return game_log
-
-    # in future, user selects what game they want to see highlights from
-    # for now, we'll just use the first game in the game log
-    def get_game_id(game_log):
-        return game_log.iloc[0]['Game_ID']
 
     def get_event_ids(self, game_id, player_id, boxes_checked):
         """Retrieves events for a player in a specific game, filtered by event types desired by the user.
@@ -165,51 +120,31 @@ class DataRetriever:
             pandas.DataFrame: DataFrame of filtered events with the following columns:
                 - EVENTNUM (int): Unique event number within the game.
                 - EVENTMSGTYPE (int): Type of event (i.e field goal, rebound).
+                - HOMEDESCRIPTION (str): Description of the event from the home team's perspective.
                 - PLAYER1_ID (int): ID of the first player involved in the event.
                 - PLAYER2_ID (int): ID of the second player involved in the event.
                 - PLAYER3_ID (int): ID of the third player involved in the event.
                 - VIDEO_AVAILABLE_FLAG (int): Represent if video is available for the event or not.
 
         """
-        import nba_api.stats.endpoints.playbyplayv2 as playbyplayv2
+        from nba_api.stats.endpoints import playbyplayv2
         event_ids = playbyplayv2.PlayByPlayV2(game_id = game_id)
         event_ids = event_ids.get_data_frames()[0]
-        # player2 id would be when something bad happens to player2
-        # select rows where player1 id is the player we want and video is available
-        # later provide an option for user to choose actions that they want (i.e field goals, assists, rebounds, blocks)
-        event_ids = event_ids.loc[((event_ids['PLAYER1_ID'] == player_id) | (event_ids['PLAYER2_ID'] == player_id) | (event_ids['PLAYER3_ID'] == player_id)) & (event_ids['VIDEO_AVAILABLE_FLAG'] == 1)]
-        # filter to only get the rows needed
-        event_ids = event_ids.loc[event_ids['EVENTMSGTYPE'].isin(boxes_checked)]
-        #event_ids = event_ids[event_ids['EVENTMSGTYPE'].isin(boxes_checked)]
-        #event_ids = event_ids[['EVENTNUM']]
-        return event_ids
-        
-    # def get_event_ids(self, game_id, player_id):
-    #     if not os.path.exists('event_ids.csv'):
-    #         event_ids = playbyplayv2.PlayByPlayV2(game_id = game_id)
-    #         event_ids = event_ids.get_data_frames()[0]
-    #         # player2 id would be when something bad happens to player2
-    #         # select rows where player1 id is the player we want and video is available
-    #         # later provide an option for user to choose actions that they want (i.e field goals, assists, rebounds, blocks)
-    #         event_ids = event_ids.loc[((event_ids['PLAYER1_ID'] == player_id) | (event_ids['PLAYER2_ID'] == player_id)) & (event_ids['VIDEO_AVAILABLE_FLAG'] == 1)]
-    #         # filter to only get the event rows
-    #         event_ids = event_ids['EVENTNUM']
-    #         event_ids.to_csv('event_ids.csv', index = False)
-    #         print("Got from API and saved to csv.")
-    #         return event_ids
-    #     else:
-    #         # make sure to read event ids as strings so leading zeroes preserved
-    #         event_ids = pd.read_csv('event_ids.csv')
-    #         print("Read event ids from file.")
-    #         return event_ids
 
-    def read_event_ids():
-        event_ids = pd.read_csv('event_ids.csv')
-        print("Read event ids from file.")
+        event_ids = event_ids.loc[
+            (
+                (
+                    (event_ids['PLAYER1_ID'] == player_id) |
+                    (event_ids['PLAYER2_ID'] == player_id) |
+                    (event_ids['PLAYER3_ID'] == player_id)) &
+                    (event_ids['VIDEO_AVAILABLE_FLAG'] == 1) &
+                    (event_ids['EVENTMSGTYPE'].isin(boxes_checked)
+                )
+            ),
+            ['EVENTNUM', 'EVENTMSGTYPE', 'HOMEDESCRIPTION', 'PLAYER1_ID', 'PLAYER2_ID', 'PLAYER3_ID', 'VIDEO_AVAILABLE_FLAG']
+        ]
         return event_ids
 
-    #make another function to only get one link
-    # so you can retry if it fails later
     async def get_download_link(self, session, game_id, row, event_ids, 
                                 update_progress_bar, semaphore, lock):
         """Asynchronously fetches the video download link and description for an event.
@@ -243,9 +178,8 @@ class DataRetriever:
                 await asyncio.sleep(time)
                 url = 'https://stats.nba.com/stats/videoeventsasset?GameEventID={}&GameID={}'.format(row.EVENTNUM, game_id)
                 print("Getting link for url: ", url)
-                # await asyncio.sleep(3.0)
                 try:
-                    async with session.get(url, headers=self.headers, timeout=5) as response:
+                    async with session.get(url, headers=self.headers, timeout=3) as response:
                         if response.status == 200:
                             r_json = await response.json()
                             video_link = r_json['resultSets']['Meta']['videoUrls'][0]['lurl']
@@ -257,7 +191,7 @@ class DataRetriever:
                                 event_ids.loc[event_ids['EVENTNUM'] == row.EVENTNUM, 'DESCRIPTION'] = desc
                                 self.counter += 1
                                 value = int((self.counter) / len(event_ids) * 100)
-                                update_progress_bar(value, "Get link for: {}".format(row.HOMEDESCRIPTION))
+                                update_progress_bar(value, "Get link for: {}".format(desc))
                             print("Sleeping...")
                             await asyncio.sleep(random.uniform(0, 1.0))
                             return
@@ -294,12 +228,11 @@ class DataRetriever:
         print(f"Max retries exceeded for {row.EVENTNUM}. Skipping.")
         raise Exception(f"Max retries exceeded while getting link for event {row.EVENTNUM}: {row.HOMEDESCRIPTION}.\n\n{error_msg_string}")
         
-
     async def get_download_links_async(self, game_id, event_ids, update_progress_bar):
         """Creates a task for each event to fetch video download links and execute the tasks.
 
         Creates a ClientSession, and using that, creates a task for each event to fetch the video download link.
-        The tasks are then run concurrently, but limited by a semaphore so only two requests happen at a time.
+        The tasks are then run concurrently, but limited by a semaphore so only three requests happen at a time.
         As each task completes, the event_ids DataFrame is updated with the video links and descriptions.
 
         Args:
@@ -323,10 +256,8 @@ class DataRetriever:
         event_ids['VIDEO_LINK'] = ''
         event_ids['DESCRIPTION'] = ''
         # limit the number of concurrent requests
-        connector = aiohttp.TCPConnector(limit=2)
-        semaphore = asyncio.Semaphore(2)
+        semaphore = asyncio.Semaphore(3)
         async with aiohttp.ClientSession(
-            connector = connector,
             headers = self.headers,
         ) as session:
             tasks = []
@@ -340,91 +271,4 @@ class DataRetriever:
         self.counter = 0
         return event_ids
 
-            
-    
-    # async def get_download_links(self, game_id, event_ids, update_progress_bar):
-    #     # add another column to event_ids for the download link
-    #     event_ids['VIDEO_LINK'] = ''
-    #     event_ids['DESCRIPTION'] = ''
-    #     session = requests.Session()
-    #     session.headers.update(self.headers)
-    #     retry_settings = Retry(
-    #         total = 5,
-    #         backoff_factor = 0.5
-    #     )
-    #     adapter = HTTPAdapter(max_retries = retry_settings)
-    #     session.mount('https://', adapter)
-    #     # for each event id
-    #     for index, event_id in enumerate(event_ids['EVENTNUM']):
-    #         # get the download link and description
-    #         #video_event = get_download_link(event_id, game_id)
-    #         url = 'https://stats.nba.com/stats/videoeventsasset?GameEventID={}&GameID={}'.format(event_id, game_id)
-    #         # randomize user agent
-    #         # self.headers['User-Agent'] = random.choice(self.user_agents)
-            
-    #         # test = self.ua.random
-    #         # print("Generated User-Agent: ", test)
-    #         # # update session headers with random user agent
-    #         # session.headers.update({'User-Agent': test})
-    #         session.headers.update({'User-Agent': random.choice(self.user_agents)})
-    #         print("Session headers: ", session.headers)
-    #         try:
-    #             print("Requesting for event id: ", event_id)
-    #             r = session.get(url, headers = self.headers, timeout = 10)
-    #             # check if request was successful
-    #             r.raise_for_status()
-    #             # convert to json
-    #             r_json = r.json()
-    #             video_link = r_json['resultSets']['Meta']['videoUrls'][0]['lurl']
-    #             desc = r_json['resultSets']['playlist'][0]['dsc']
-    #             video_event = {'video': video_link, 'desc': desc}
-    #             # add the link and description to event_ids
-    #             # 1st part of loc filters rows, 2nd part is for columns
-    #             event_ids.loc[event_ids['EVENTNUM'] == event_id, 'VIDEO_LINK'] = video_event['video']
-    #             event_ids.loc[event_ids['EVENTNUM'] == event_id, 'DESCRIPTION'] = video_event['desc']
-    #             # sleep
-    #             value = int((index + 1) / len(event_ids) * 100)
-    #             update_progress_bar(value, "Get link for: {}".format(video_event['desc']))
-    #             print("Sleeping...")
-    #             await asyncio.sleep(random.uniform(1.2, 2.0))
-    #         except requests.exceptions.HTTPError as e:
-    #             print("HTTP error: ", e)
-    #         except requests.exceptions.ConnectionError as e:
-    #             print("Connection error: ", e)
-    #         except requests.exceptions.Timeout as e:
-    #             print("Timeout error: ", e)
-    #         except requests.exceptions.RequestException as e:
-    #             print("Something else error: ", e)
-        
-    #     # update our file
-    #     # event_ids.to_csv('event_ids.csv', index = False)
-    #     print("Download links added to dataframe.")
-    #     session.close()
-    #     return event_ids
-
-    # def test():
-    #     nba_players = players.get_players()
-    #     print("Number of players fetched: {}".format(len(nba_players)))
-    #     nba_players[:5]
-
-def main():
-    from fake_useragent import UserAgent
-    ua = UserAgent()
-    data_dir = os.path.join(os.getcwd(), 'data', 'vids')
-    nba_data_retriever = DataRetriever(ua, data_dir)
-    active_players = nba_data_retriever.get_active_players()
-    active_players.to_csv('all_players.csv', index = False)
-    # player_id = nba_data_retriever.get_player_id('Kevin Durant')
-    #game_log = nba_data_retriever.get_game_log(201142, season = '2020-21', season_type = 'Regular Season')
-    #game_log.to_csv('test_game_log.csv', index = False)
-    
-    # game_id = nba_data_retriever.get_game_id(game_log)
-    # print("Game ID: ", game_id)
-    # event_ids = nba_data_retriever.get_event_ids('0022100001', 201142, {1, 2, 3, 4, 5, 6, 7, 8})
-    # event_ids.to_csv('test_event_ids.csv', index = False)
-    # dl_links = nba_data_retriever.get_download_links(game_id, event_ids)
-
-if __name__ == '__main__':
-    # test()
-    main()
 
