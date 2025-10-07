@@ -6,6 +6,7 @@ to update the GameLogTable widget with the corresponding game log.
 """
 from PySide6.QtWidgets import QComboBox, QCompleter, QLabel, QWidget, QVBoxLayout, QPushButton
 from PySide6.QtCore import QStringListModel, Qt, Signal
+import datetime
 
 class PlayerSearchBox(QWidget):
     """Widget for selecting a player, year, and season type to find the games the user wants.
@@ -58,11 +59,15 @@ class PlayerSearchBox(QWidget):
         # box to select season
         self.season_box_label = QLabel("Select the Year:")
         self.season_box = QComboBox(self)
-        self.season_box.addItems(["2025-26", "2024-25", "2023-24", 
-                                  "2022-23", "2021-22", "2020-21", 
-                                  "2019-20", "2018-19", "2017-18", 
-                                  "2016-17", "2015-16", "2014-15", 
-                                  "2013-14", "2012-13"])
+
+        # make list of seasons using curent year down to 2012-2013
+        current_year = datetime.datetime.now().year
+        seasons = []
+        for year in range(current_year + 1, 2012, -1):
+            prev_year = str(year - 1)
+            seasons.append(f"{prev_year}-{str(year)[2:]}")
+        self.season_box.addItems(seasons)
+
         # box to select season type
         self.season_type_label = QLabel("Select a Season Type:")
         self.season_type_box = QComboBox(self)
