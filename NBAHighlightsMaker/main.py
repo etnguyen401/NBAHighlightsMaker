@@ -27,14 +27,10 @@ def startup():
     app = QApplication(sys.argv)
     
     data_dir = os.path.join(os.getcwd(), 'data')
+    
     # create data directory if it doesn't exist
     os.makedirs(os.path.join(data_dir, 'vids'), exist_ok=True)
     os.makedirs(os.path.join(data_dir, 'csv'), exist_ok=True)
-    # integrated event loop for pyside loop and asyncio's loop
-    loop = QEventLoop(app)
-    
-    # set loop as current asyncio event loop
-    asyncio.set_event_loop(loop)
     
     # useragents from these browsers are more likely to succeed
     ua = UserAgent(browsers=['Opera', 'Safari', 'Firefox'], platforms='desktop')
@@ -50,6 +46,13 @@ def startup():
     # bring to front and activate window to grab attention
     window.raise_()
     window.activateWindow()
+
+    # integrated event loop for pyside loop and asyncio's loop
+    loop = QEventLoop(app)
+    
+    # set loop as current asyncio event loop
+    asyncio.set_event_loop(loop)
+
     with loop:
         sys.exit(loop.run_forever())
 

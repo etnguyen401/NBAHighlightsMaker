@@ -4,7 +4,6 @@ This module contains the class DataRetriever, which gets player data and
 game logs using the nba_api library. It also gets the links for the different
 clips of the events the user wants to see. 
 """
-import time 
 import os
 import random
 import pandas as pd
@@ -266,9 +265,13 @@ class DataRetriever:
                 tasks.append(self.get_download_link(session, game_id, row, event_ids, 
                                                     update_progress_bar, semaphore, 
                                                     lock))
-            await asyncio.gather(*tasks)
+            try:
+                await asyncio.gather(*tasks)
+            except Exception:
+                raise
+            finally:
+                self.counter = 0
         print("Finished getting download links.")
-        self.counter = 0
         return event_ids
 
 
