@@ -59,12 +59,6 @@ class VideoMaker():
         self.data_dir = os.path.join(data_dir, 'vids')
         self.logger = MyProgressBarLogger()
         self.logger.progress_bar_values.connect(update_progress_bar)
-
-    def get_clip_order(self):
-        #get all files in data directory
-        clips_paths = [f for f in os.listdir(self.data_dir) if f.endswith('.mp4')]
-        sorted_clips_paths = sorted(clips_paths, key=lambda x: int(x.split('.')[0]))
-        return sorted_clips_paths
     
     async def create_video_clips(self, clip_paths):
         """Creates VideoFileClip objects from file paths with fade-in and fade-out effects.

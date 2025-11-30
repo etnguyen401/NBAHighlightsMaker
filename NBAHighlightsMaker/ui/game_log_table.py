@@ -247,9 +247,7 @@ class GameLogTable(QWidget):
             boxes_checked.add(EventMsgType.FOUL.value)
         
         # get all event ids relating to the player
-        start = time.time()
         event_ids = self.data_retriever.get_event_ids(self.game_id, self.player_id, boxes_checked)
-        print(f"Event IDs retrieved in {time.time() - start} seconds.")
 
         # check edge cases where only one action is selected, filter out unwanted events
         if self.checkboxes["FG Made"].isChecked() and not self.checkboxes["Assists"].isChecked():
