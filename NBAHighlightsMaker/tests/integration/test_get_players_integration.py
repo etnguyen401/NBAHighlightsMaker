@@ -66,7 +66,7 @@ def test_get_game_log_integration(make_data):
 def test_get_event_ids_integration(make_data):
     _, data_retriever = make_data  
 
-    # use a kevin durant's player id
+    # use kevin durant's player id
     game_id = "0022401088"
     player_id = "201142"
     boxes_checked = set()
