@@ -1,8 +1,11 @@
+import asyncio
+import aiohttp
 import pytest
 from NBAHighlightsMaker.players.getplayers import DataRetriever
 from fake_useragent import UserAgent
 from NBAHighlightsMaker.common.enums import EventMsgType
 import os
+import pandas as pd
 
 @pytest.fixture(scope='session')
 def make_data(tmp_path_factory):
@@ -81,3 +84,51 @@ def test_get_event_ids_integration(make_data):
     # check that the columns we need exist
     expected_columns = {'EVENTNUM', 'EVENTMSGTYPE', 'HOMEDESCRIPTION', 'PLAYER1_ID', 'PLAYER2_ID', 'PLAYER3_ID', 'VIDEO_AVAILABLE_FLAG'}
     assert expected_columns == set(event_ids_df.columns), "The DataFrame should contain the expected columns."
+
+@pytest.mark.asyncio
+async def test_get_download_link_integration(make_data):
+    _, data_retriever = make_data
+
+    # make game id
+    game_id = "0042400232"
+
+    # make event_ids dataframe 
+    event_ids = pd.DataFrame({
+            'EVENTNUM': [8],
+            'EVENTMSGTYPE': [1],
+            'HOMEDESCRIPTION': ["McDaniels 25' 3PT Jump Shot (3 PTS) (Randle 1 AST)"],
+            'PLAYER1_ID': [1630183],
+            'PLAYER2_ID': [203944],
+            'PLAYER3_ID': [0],
+            'VIDEO_AVAILABLE_FLAG': [1],
+            'VIDEO_LINK': [""],
+            'DESCRIPTION': [""],
+    })
+
+    # get the one row of dataframe to download
+    row = list(event_ids.itertuples(index=True))[0]
+
+    # make a dummy update progress bar function
+    string = ""
+    def update_progress_bar(value, description):
+        nonlocal string
+        string = f"Progress: {value}%, Description: {description}"
+    
+    # make semaphore
+    semaphore = asyncio.Semaphore(3)
+
+    # make lock
+    lock = asyncio.Lock()
+    # make aiohttp session
+    async with aiohttp.ClientSession() as session:
+        # call to get download link
+        await data_retriever.get_download_link(session, game_id, row, event_ids, update_progress_bar, semaphore, lock)
+    
+    assert string == "Progress: 100%, Description: Get link for: McDaniels 25' 3PT Jump Shot (3 PTS) (Randle 1 AST)"
+
+    # check that we get a link
+    assert event_ids.loc[event_ids['EVENTNUM'] == 8, 'VIDEO_LINK'].values[0] != "", "The VIDEO_LINK should not be empty."
+    
+    # check that we get a description
+    assert event_ids.loc[event_ids['EVENTNUM'] == 8, 'DESCRIPTION'].values[0] != "", "The DESCRIPTION should not be empty."
+

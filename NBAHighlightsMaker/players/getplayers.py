@@ -178,7 +178,7 @@ class DataRetriever:
                 url = 'https://stats.nba.com/stats/videoeventsasset?GameEventID={}&GameID={}'.format(row.EVENTNUM, game_id)
                 print("Getting link for url: ", url)
                 try:
-                    async with session.get(url, headers=self.headers, timeout=3) as response:
+                    async with session.get(url, headers=self.headers, timeout=5) as response:
                         if response.status == 200:
                             r_json = await response.json()
                             video_link = r_json['resultSets']['Meta']['videoUrls'][0]['lurl']
