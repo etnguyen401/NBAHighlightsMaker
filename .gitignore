@@ -177,6 +177,7 @@ cython_debug/
 *.csv
 *.mp4
 *.mp3
+*.json
 
 # ignore from random folder
 NBAHighlightsMaker/random
