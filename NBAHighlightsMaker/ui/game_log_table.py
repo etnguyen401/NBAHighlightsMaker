@@ -43,6 +43,8 @@ class GameLogTable(QWidget):
         select_all_button (QCheckBox): Checkbox to select/deselect all actions.
         action_type_boxes (dict): Dictionary of checkboxes for each possible action.
         layout_action_type_boxes (QHBoxLayout): Horizontal layout for the action_type_boxes.
+        layout_action_options_boxes (QHBoxLayout): Horizontal layout for action options based on the action types.
+        action_options_boxes (dict): Dictionary of checkboxes for each action option based on the action types.
         create_video_button (QPushButton): Button to start video creation.
         cancel_button (QPushButton): Button to cancel everything.
         progress_bar_label (QLabel): Label to display the progress bar description.
@@ -86,12 +88,6 @@ class GameLogTable(QWidget):
         # make dictionary of checkboxes for each action, 
         # make them checked as default, add to layout
         self.layout_action_type_boxes = QHBoxLayout()
-        
-        # actions = [
-        #     "FG Made", "Assists", "FG Missed", "Free Throw Attempts",
-        #     "Rebounds", "Fouls Committed", "Fouls Drawn", "Turnovers",
-        #     "Steals", "Blocks"
-        # ]
         actions = [
             "2PT", "3PT", "Assists", "Rebound", "Block",
             "Steal", "Turnover", "Foul", 
@@ -99,13 +95,7 @@ class GameLogTable(QWidget):
         ]
         self.action_type_boxes = {}
         self.create_checkboxes(actions, self.action_type_boxes, self.layout_action_type_boxes, True)
-        # for action in actions:
-        #     checkbox = QCheckBox(action)
-        #     checkbox.setChecked(True)
-        #     self.action_type_boxes[action] = checkbox
-        #     self.layout_action_type_boxes.addWidget(checkbox)
 
-        
         self.layout_action_options_boxes = QHBoxLayout()  
         action_options = [
             "Field Goals Made",
@@ -117,13 +107,6 @@ class GameLogTable(QWidget):
         ]
         self.action_options_boxes = {}
         self.create_checkboxes(action_options, self.action_options_boxes, self.layout_action_options_boxes, True)
-        # make each of the action option boxes invisible
-        # for option in action_options:
-        #     checkbox = QCheckBox(option)
-        #     checkbox.setChecked(True)
-        #     self.action_options_boxes[option] = checkbox
-        #     checkbox.setVisible(False)
-        #     self.layout_action_options_boxes.addWidget(checkbox)
 
         #make create video button
         self.create_video_button = QPushButton("Create Video")
