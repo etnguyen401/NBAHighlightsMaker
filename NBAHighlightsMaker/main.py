@@ -54,6 +54,7 @@ def startup():
     asyncio.set_event_loop(loop)
 
     with loop:
+        
         sys.exit(loop.run_forever())
 
 if __name__ == "__main__":

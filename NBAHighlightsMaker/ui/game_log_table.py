@@ -41,8 +41,8 @@ class GameLogTable(QWidget):
         layout (QVBoxLayout): Main vertical layout for the widget.
         table_widget (QTableWidget): Table widget displaying the game log.
         select_all_button (QCheckBox): Checkbox to select/deselect all actions.
-        checkboxes (dict): Dictionary of checkboxes for each possible action.
-        layout_checkboxes (QHBoxLayout): Horizontal layout for the checkboxes.
+        action_type_boxes (dict): Dictionary of checkboxes for each possible action.
+        layout_action_type_boxes (QHBoxLayout): Horizontal layout for the action_type_boxes.
         create_video_button (QPushButton): Button to start video creation.
         cancel_button (QPushButton): Button to cancel everything.
         progress_bar_label (QLabel): Label to display the progress bar description.
@@ -85,18 +85,45 @@ class GameLogTable(QWidget):
 
         # make dictionary of checkboxes for each action, 
         # make them checked as default, add to layout
-        self.layout_checkboxes = QHBoxLayout()
+        self.layout_action_type_boxes = QHBoxLayout()
+        
+        # actions = [
+        #     "FG Made", "Assists", "FG Missed", "Free Throw Attempts",
+        #     "Rebounds", "Fouls Committed", "Fouls Drawn", "Turnovers",
+        #     "Steals", "Blocks"
+        # ]
         actions = [
-            "FG Made", "Assists", "FG Missed", "Free Throw Attempts",
-            "Rebounds", "Fouls Committed", "Fouls Drawn", "Turnovers",
-            "Steals", "Blocks"
+            "2PT", "3PT", "Assists", "Rebound", "Block",
+            "Steal", "Turnover", "Foul", 
+            "Freethrow", "Jumpball"
         ]
-        self.checkboxes = {}
-        for action in actions:
-            checkbox = QCheckBox(action)
-            checkbox.setChecked(True)
-            self.checkboxes[action] = checkbox
-            self.layout_checkboxes.addWidget(checkbox)
+        self.action_type_boxes = {}
+        self.create_checkboxes(actions, self.action_type_boxes, self.layout_action_type_boxes, True)
+        # for action in actions:
+        #     checkbox = QCheckBox(action)
+        #     checkbox.setChecked(True)
+        #     self.action_type_boxes[action] = checkbox
+        #     self.layout_action_type_boxes.addWidget(checkbox)
+
+        
+        self.layout_action_options_boxes = QHBoxLayout()  
+        action_options = [
+            "Field Goals Made",
+            "Field Goals Missed",
+            "Fouls Committed",
+            "Fouls Drawn",
+            "Free Throws Made",
+            "Free Throws Missed"
+        ]
+        self.action_options_boxes = {}
+        self.create_checkboxes(action_options, self.action_options_boxes, self.layout_action_options_boxes, True)
+        # make each of the action option boxes invisible
+        # for option in action_options:
+        #     checkbox = QCheckBox(option)
+        #     checkbox.setChecked(True)
+        #     self.action_options_boxes[option] = checkbox
+        #     checkbox.setVisible(False)
+        #     self.layout_action_options_boxes.addWidget(checkbox)
 
         #make create video button
         self.create_video_button = QPushButton("Create Video")
@@ -126,12 +153,29 @@ class GameLogTable(QWidget):
         # add objects to layout
         self.layout.addWidget(self.table_widget)
         self.layout.addWidget(self.select_all_button)
-        self.layout.addLayout(self.layout_checkboxes)
+        self.layout.addLayout(self.layout_action_type_boxes)
+        self.layout.addLayout(self.layout_action_options_boxes)
         self.layout.addWidget(self.progress_bar_label)
         self.layout.addWidget(self.progress_bar)
         self.layout.addWidget(self.create_video_button)
         self.layout.addWidget(self.cancel_button)
 
+    def create_checkboxes(self, labels, dict, layout, setVisible):
+        """Creates checkboxes for each label, adds them to the specified layout, and stores it.
+
+        Args:
+            labels (list): List of strings representing the labels for the checkboxes.
+            dict (dict): Dictionary to store the created checkboxes with labels as keys.
+            layout (QHBoxLayout): Layout to which the checkboxes will be added.
+            setVisible (bool): Whether to set the checkboxes as visible or not.
+        """
+        for label in labels:
+            checkbox = QCheckBox(label)
+            checkbox.setChecked(True)
+            checkbox.setVisible(setVisible)
+            dict[label] = checkbox
+            layout.addWidget(checkbox)
+        
     def update_progress_bar(self, value, description):
         """Updates the progress bar value and label with the specified value and description.
 
@@ -160,12 +204,14 @@ class GameLogTable(QWidget):
             self.create_video_button.setEnabled(False)
     
     def handle_select_all_click(self):
-        """Sets all action checkboxes to be checked or unchecked based on the 'Select All' checkbox state.
+        """Sets all action type checkboxes to be checked or unchecked based on the 'Select All' checkbox state.
         
         """
         # if it's checked, and the user clicks it, uncheck all  
         checked = self.select_all_button.isChecked()
-        for checkbox in self.checkboxes.values():
+        for checkbox in self.action_type_boxes.values():
+            checkbox.setChecked(checked)
+        for checkbox in self.action_options_boxes.values():
             checkbox.setChecked(checked)
 
     def cleanup(self):
@@ -230,95 +276,23 @@ class GameLogTable(QWidget):
         self.create_video_button.setEnabled(False)
         self.create_video_flag = True
         # make a set to store the boxes checked
-        boxes_checked = set()
+        wanted_action_options = set()
+        wanted_actions = set()
 
-        # check which boxes are checked, add corresponding event types to boxes_checked
-        if self.checkboxes["FG Made"].isChecked() or self.checkboxes["Assists"].isChecked():
-            boxes_checked.add(EventMsgType.FIELD_GOAL_MADE.value)
-        if self.checkboxes["FG Missed"].isChecked() or self.checkboxes["Blocks"].isChecked():
-            boxes_checked.add(EventMsgType.FIELD_GOAL_MISSED.value)
-        if self.checkboxes["Free Throw Attempts"].isChecked():
-            boxes_checked.add(EventMsgType.FREE_THROW_ATTEMPT.value)
-        if self.checkboxes["Rebounds"].isChecked():
-            boxes_checked.add(EventMsgType.REBOUND.value)
-        if self.checkboxes["Turnovers"].isChecked() or self.checkboxes["Steals"].isChecked():
-            boxes_checked.add(EventMsgType.TURNOVER.value)
-        if self.checkboxes["Fouls Committed"].isChecked() or self.checkboxes["Fouls Drawn"].isChecked():
-            boxes_checked.add(EventMsgType.FOUL.value)
+        # add desired actions/options to sets
+        for action in self.action_type_boxes:
+            if self.action_type_boxes[action].isChecked():
+                wanted_actions.add(action.lower())
+                print(f"Added {action.lower()} to wanted_actions")
+
+        for action_option in self.action_options_boxes:
+            if self.action_options_boxes[action_option].isChecked():
+                wanted_action_options.add(action_option)
+                print(f"Added {action_option} to wanted_action_options")
         
         # get all event ids relating to the player
-        event_ids = self.data_retriever.get_event_ids(self.game_id, self.player_id, boxes_checked)
+        event_ids = self.data_retriever.get_event_ids(self.game_id, self.player_id, wanted_actions, wanted_action_options)
 
-        # check edge cases where only one action is selected, filter out unwanted events
-        if self.checkboxes["FG Made"].isChecked() and not self.checkboxes["Assists"].isChecked():
-            event_ids = event_ids.loc[
-                (
-                    (event_ids['EVENTMSGTYPE'] == EventMsgType.FIELD_GOAL_MADE.value) &
-                    (event_ids['PLAYER1_ID'] == self.player_id)
-                ) | 
-                (event_ids['EVENTMSGTYPE'] != EventMsgType.FIELD_GOAL_MADE.value)
-            ]
-        elif self.checkboxes["Assists"].isChecked() and not self.checkboxes["FG Made"].isChecked():
-            event_ids = event_ids.loc[
-                (
-                    (event_ids['EVENTMSGTYPE'] == EventMsgType.FIELD_GOAL_MADE.value) &
-                    (event_ids['PLAYER2_ID'] == self.player_id)
-                ) | 
-                (event_ids['EVENTMSGTYPE'] != EventMsgType.FIELD_GOAL_MADE.value)
-            ]
-
-        if self.checkboxes["Fouls Committed"].isChecked() and not self.checkboxes["Fouls Drawn"].isChecked():
-            event_ids = event_ids.loc[
-                (
-                    (event_ids['EVENTMSGTYPE'] == EventMsgType.FOUL.value) &
-                    (event_ids['PLAYER1_ID'] == self.player_id)
-                ) | 
-                (event_ids['EVENTMSGTYPE'] != EventMsgType.FOUL.value)
-            ]
-        elif self.checkboxes["Fouls Drawn"].isChecked() and not self.checkboxes["Fouls Committed"].isChecked():
-            event_ids = event_ids.loc[
-                (
-                    (event_ids['EVENTMSGTYPE'] == EventMsgType.FOUL.value) &
-                    (event_ids['PLAYER2_ID'] == self.player_id)
-                ) | 
-                (event_ids['EVENTMSGTYPE'] != EventMsgType.FOUL.value)
-            ]
-
-        if self.checkboxes["Steals"].isChecked() and not self.checkboxes["Turnovers"].isChecked():
-            event_ids = event_ids.loc[
-                (
-                    (event_ids['EVENTMSGTYPE'] == EventMsgType.TURNOVER.value) &
-                    (event_ids['PLAYER2_ID'] == self.player_id)
-                ) | 
-                (event_ids['EVENTMSGTYPE'] != EventMsgType.TURNOVER.value)
-            ]
-        elif self.checkboxes["Turnovers"].isChecked() and not self.checkboxes["Steals"].isChecked():
-            event_ids = event_ids.loc[
-                (
-                    (event_ids['EVENTMSGTYPE'] == EventMsgType.TURNOVER.value) &
-                    (event_ids['PLAYER1_ID'] == self.player_id)
-                ) | 
-                (event_ids['EVENTMSGTYPE'] != EventMsgType.TURNOVER.value)
-            ]
-        # if blocks is selected but not fg missed, only select rows where
-        # there was a fgm and our selected player blocked it, 
-        # or it's another event type
-        if self.checkboxes["Blocks"].isChecked() and not self.checkboxes["FG Missed"].isChecked():
-            event_ids = event_ids.loc[
-                (
-                    (event_ids['EVENTMSGTYPE'] == EventMsgType.FIELD_GOAL_MISSED.value) &
-                    (event_ids['PLAYER3_ID'] == self.player_id)
-                ) | 
-                (event_ids['EVENTMSGTYPE'] != EventMsgType.FIELD_GOAL_MISSED.value)
-            ]
-        elif self.checkboxes["FG Missed"].isChecked() and not self.checkboxes["Blocks"].isChecked():
-            event_ids = event_ids.loc[
-                (
-                    (event_ids['EVENTMSGTYPE'] == EventMsgType.FIELD_GOAL_MISSED.value) &
-                    (event_ids['PLAYER1_ID'] == self.player_id)
-                ) | 
-                (event_ids['EVENTMSGTYPE'] != EventMsgType.FIELD_GOAL_MISSED.value)
-            ]
         # after filter, check if event_ids is empty
         # if empty, show error message to user and return
         if event_ids.empty:

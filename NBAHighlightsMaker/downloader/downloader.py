@@ -49,7 +49,7 @@ class Downloader():
         Args:
             session (aiohttp.ClientSession): A session object used for the HTTP requests.
             event_ids (pandas.DataFrame): DataFrame to update with video links and the description.
-            row (pandas.Series): Row of data for the event containing EVENTNUM, etc.
+            row (pandas.Series): Row of data for the event containing actionNumber, etc.
             file_path (str): Path to the file where the video will be saved.
             update_progress_bar (Callable): Function to update the progress bar in the UI.
             semaphore (asyncio.Semaphore): Semaphore to limit concurrent downloads.
@@ -64,7 +64,7 @@ class Downloader():
             async with semaphore:
                 self.headers['User-Agent'] = self.ua.random
                 time = random.uniform(0, 2.5)
-                print(f"Sleeping for {time:.2f} seconds before downloading {row.EVENTNUM}.mp4...") 
+                print(f"Sleeping for {time:.2f} seconds before downloading {row.actionNumber}.mp4...") 
                 await asyncio.sleep(time)
                 try:
                     async with session.get(row.VIDEO_LINK, headers=self.headers, timeout=30) as response:
@@ -79,7 +79,7 @@ class Downloader():
                                 # update progress bar
                                 self.counter += 1
                                 value = int((self.counter) / len(event_ids) * 100)
-                                update_progress_bar(value, f"Downloaded: {row.DESCRIPTION}")
+                                update_progress_bar(value, f"Downloaded: {row.description}")
                             return
                         elif response.status == 429:
                             print(f"Rate limit exceeded for {row.VIDEO_LINK}. Retrying after a delay...")
@@ -112,7 +112,7 @@ class Downloader():
                     error_msg_string += f"Try #{retry_count + 1} failed: Unexpected error.\n"
                     retry_count += 1
         print(f"Failed to download {row.VIDEO_LINK}. Skipping.")
-        raise Exception(f"Max retries exceeded while getting link for event {row.EVENTNUM}: {row.DESCRIPTION}.\n\n{error_msg_string}")
+        raise Exception(f"Max retries exceeded while getting link for event {row.actionNumber}: {row.description}.\n\n{error_msg_string}")
         
     async def download_files(self, event_ids, update_progress_bar):
         """Create a task for each event to fetch video download links and execute the tasks.
@@ -127,7 +127,7 @@ class Downloader():
 
         Returns:
             pandas.DataFrame: DataFrame with the following columns:
-                - EVENTNUM (int): Unique event number for an event in the game.
+                - actionNumber (int): Unique event number for an event in the game.
                 - EVENTMSGTYPE (int): Type of event (i.e field goal, rebound).
                 - HOMEDESCRIPTION (str): Description of the event from the home team's perspective.
                 - PLAYER1_ID (int): ID of the first player involved in the event.
@@ -147,7 +147,7 @@ class Downloader():
             tasks = []
             lock = asyncio.Lock()
             for row in event_ids.itertuples(index=True):
-                file_path = os.path.join(self.data_dir, "{}.mp4".format(row.EVENTNUM))
+                file_path = os.path.join(self.data_dir, "{}.mp4".format(row.actionNumber))
                 # Create download tasks
                 tasks.append(self.download_file(session, event_ids, row, file_path, update_progress_bar,
                                                 semaphore, lock))

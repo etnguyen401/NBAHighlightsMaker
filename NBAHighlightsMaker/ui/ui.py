@@ -26,12 +26,13 @@ class HighlightsUI(QMainWindow):
     """
     def __init__(self, data_retriever, downloader, data_dir):
         super().__init__()
+        # x, y, width, height
+        self.setGeometry(300, 300, 600, 700)
         self.setWindowTitle("NBAHighlightsMaker")
         icon = QIcon("./resources/icon.png")
         self.setWindowIcon(icon)
-        # x, y, width, height
-        self.setGeometry(300, 300, 540, 600)
-
+        
+        
         # set to vertical box layout
         self.layout = QVBoxLayout()
         # set spacing between widgets

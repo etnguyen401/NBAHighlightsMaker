@@ -107,42 +107,133 @@ class DataRetriever:
         
         return game_log
 
-    def get_event_ids(self, game_id, player_id, boxes_checked):
+    def get_event_ids(self, game_id, player_id, wanted_actions, wanted_action_options):
         """Retrieves events for a player in a specific game, filtered by event types desired by the user.
 
-        Args:
-            game_id (str): NBA game ID.
-            player_id (int): NBA player ID.
-            boxes_checked (set): List of event types that the user wants to see.
-
-        Returns:
-            pandas.DataFrame: DataFrame of filtered events with the following columns:
-                - EVENTNUM (int): Unique event number within the game.
-                - EVENTMSGTYPE (int): Type of event (i.e field goal, rebound).
-                - HOMEDESCRIPTION (str): Description of the event from the home team's perspective.
-                - PLAYER1_ID (int): ID of the first player involved in the event.
-                - PLAYER2_ID (int): ID of the second player involved in the event.
-                - PLAYER3_ID (int): ID of the third player involved in the event.
-                - VIDEO_AVAILABLE_FLAG (int): Represent if video is available for the event or not.
-
+            Args:
+                game_id (str): NBA game ID.
+                player_id (int): NBA player ID.
+                wanted_actions (set): Set of event types that the user wants to see.
+                wanted_action_options (set): Set of specific options for certain event types, e.g 'Field Goals Made', 'Fouls Committed'.
+                
+            Returns:
+                pandas.DataFrame: DataFrame of filtered events with the following columns:
+                    - actionNumber (int): Unique event number within the game.
+                    - actionType (int): Type of event (i.e field goal, rebound).
+                    - subType (str): More specific information about the event.
+                    - personId (int): ID of the main player involved in the event.
+                    - description (str): Description of the event.
+                    - assistPersonId (int): ID of the person who assisted the field goal.
+                    - foulDrawnPersonId (int): ID of the person who drew the foul.
+                    - blockPersonId (int): ID of the person who blocked the shot.
         """
-        from nba_api.stats.endpoints import playbyplayv2
-        event_ids = playbyplayv2.PlayByPlayV2(game_id = game_id)
-        event_ids = event_ids.get_data_frames()[0]
-
-        event_ids = event_ids.loc[
-            (
-                (
-                    (event_ids['PLAYER1_ID'] == player_id) |
-                    (event_ids['PLAYER2_ID'] == player_id) |
-                    (event_ids['PLAYER3_ID'] == player_id)) &
-                    (event_ids['VIDEO_AVAILABLE_FLAG'] == 1) &
-                    (event_ids['EVENTMSGTYPE'].isin(boxes_checked)
-                )
-            ),
-            ['EVENTNUM', 'EVENTMSGTYPE', 'HOMEDESCRIPTION', 'PLAYER1_ID', 'PLAYER2_ID', 'PLAYER3_ID', 'VIDEO_AVAILABLE_FLAG']
+        from nba_api.live.nba.endpoints import playbyplay
+        pbp = playbyplay.PlayByPlay(game_id=game_id)
+        df = pd.DataFrame(pbp.actions.get_dict())
+        # choose rows that have the selected actions and involve the specified player
+        # or are assists made by the player, only if assistes are wanted
+        # or are fouls drawn by the player, only if fouls are wanted
+        filtered_df = df.loc[
+        (
+            (df['actionType'].isin(wanted_actions)) & (df['personId'] == player_id)
+        )
+        |
+            ((df['assistPersonId'] == player_id) & ('assists' in (wanted_actions)))
+        |
+            ((df['foulDrawnPersonId'] == player_id) & ('foul' in (wanted_actions)))
+        , ['actionNumber', 'actionType', 'subType', 'personId', 'description', 'shotResult', 'assistPersonId', 'foulDrawnPersonId', 'blockPersonId']
         ]
-        return event_ids
+
+        def filtering_helper(action_1, action_2, wanted_action_set, df, specified_action_vals, 
+                            secondary_col, secondary_col_val):
+            """Helper function to filter unneeded rows based on chosen action types and secondary conditions.
+            
+            There are situations where there are options for certain event types (e.g Field Goals Made/Missed),
+            a user could select only one of the options, so this function helps filter out the unwanted rows.
+            
+            Args:
+                action_1 (str): Primary action type to filter using.
+                action_2 (str): Secondary action type to filter using.
+                wanted_action_set (set): Set of wanted actions.
+                df (pandas.DataFrame): DataFrame to filter.
+                specified_action_vals (set): Set of specific action values to filter using.
+                secondary_col (str): Secondary column that we use the value from to filter out either action_1 or action_2.
+                secondary_col_val (any): The value that we match so we can filter the row out.
+            
+            Returns:
+                pandas.DataFrame: Filtered DataFrame.
+            """
+            if action_1 in wanted_action_set and action_2 not in wanted_action_set:
+                df = df[
+                    ~((df['actionType'].isin(specified_action_vals)) & (df[secondary_col] == secondary_col_val))
+                ]
+            elif action_2 in wanted_action_set and action_1 not in wanted_action_set:
+                df = df[
+                    ~((df['actionType'].isin(specified_action_vals)) & (df[secondary_col] != secondary_col_val))
+                ]
+            return df
+        
+        # if field goal made checked only, filter out missed shots
+        # filter again for specific cases
+        # if field goal made checked, and field goal missed not checked, only keep made shots
+        # so select rows where it's a made shot or it's not a field goal attempt
+        filtered_df = filtering_helper('Field Goals Made', 'Field Goals Missed', wanted_action_options, filtered_df,
+                            {'2pt', '3pt'}, 'shotResult', 'Missed')
+        
+        # filter for fouls committed/drawn
+        # if fouls committed is checked and fouls drawn isn't
+        # only keep rows where the actionType is foul and the person who committed it isn't the player
+        filtered_df = filtering_helper('Fouls Drawn', 'Fouls Committed', wanted_action_options, filtered_df,
+                                    {'foul'}, 'personId', player_id)
+
+        # filter for free throws made/missed
+        filtered_df = filtering_helper('Free Throws Made', 'Free Throws Missed', wanted_action_options, filtered_df,
+                                        {'freethrow'}, 'shotResult', 'Missed')
+        
+        # avoid duplicates when there is an offensive foul
+        # select rows where it's not a turnover that has subtype offensive foul
+        if 'foul' in wanted_actions and 'turnover' in wanted_actions:
+            filtered_df = filtered_df[
+                ~((filtered_df['actionType'] == 'turnover') & (filtered_df['subType'] == 'offensive foul'))
+            ]
+
+        return filtered_df
+    # def get_event_ids(self, game_id, player_id, boxes_checked):
+    #     """Retrieves events for a player in a specific game, filtered by event types desired by the user.
+
+    #     Args:
+    #         game_id (str): NBA game ID.
+    #         player_id (int): NBA player ID.
+    #         boxes_checked (set): List of event types that the user wants to see.
+
+    #     Returns:
+    #         pandas.DataFrame: DataFrame of filtered events with the following columns:
+    #             - EVENTNUM (int): Unique event number within the game.
+    #             - EVENTMSGTYPE (int): Type of event (i.e field goal, rebound).
+    #             - HOMEDESCRIPTION (str): Description of the event from the home team's perspective.
+    #             - PLAYER1_ID (int): ID of the first player involved in the event.
+    #             - PLAYER2_ID (int): ID of the second player involved in the event.
+    #             - PLAYER3_ID (int): ID of the third player involved in the event.
+    #             - VIDEO_AVAILABLE_FLAG (int): Represent if video is available for the event or not.
+
+    #     """
+    #     from nba_api.stats.endpoints import playbyplayv2
+    #     event_ids = playbyplayv2.PlayByPlayV2(game_id = game_id)
+    #     event_ids = event_ids.get_data_frames()[0]
+
+    #     event_ids = event_ids.loc[
+    #         (
+    #             (
+    #                 (event_ids['PLAYER1_ID'] == player_id) |
+    #                 (event_ids['PLAYER2_ID'] == player_id) |
+    #                 (event_ids['PLAYER3_ID'] == player_id)) &
+    #                 (event_ids['VIDEO_AVAILABLE_FLAG'] == 1) &
+    #                 (event_ids['EVENTMSGTYPE'].isin(boxes_checked)
+    #             )
+    #         ),
+    #         ['EVENTNUM', 'EVENTMSGTYPE', 'HOMEDESCRIPTION', 'PLAYER1_ID', 'PLAYER2_ID', 'PLAYER3_ID', 'VIDEO_AVAILABLE_FLAG']
+    #     ]
+    #     return event_ids
 
     async def get_download_link(self, session, game_id, row, event_ids, 
                                 update_progress_bar, semaphore, lock):
@@ -173,35 +264,38 @@ class DataRetriever:
                 self.headers['User-Agent'] = self.ua.random
                 print("Headers: ", self.headers)
                 time = random.uniform(0, 2.0)
-                print(f"Sleeping for {time:.2f} seconds before getting link for {row.EVENTNUM}...")
+                print(f"Sleeping for {time:.2f} seconds before getting link for {row.actionNumber}...")
                 await asyncio.sleep(time)
-                url = 'https://stats.nba.com/stats/videoeventsasset?GameEventID={}&GameID={}'.format(row.EVENTNUM, game_id)
+                event_num = row.actionNumber
+                if (row.actionType == 'steal') or (row.actionType == 'block'):
+                    event_num -= 1
+                elif row.actionType == 'turnover' and row.subType == 'offensive foul':
+                    event_num -= 2
+                url = 'https://stats.nba.com/stats/videoeventsasset?GameEventID={}&GameID={}'.format(event_num, game_id)
                 print("Getting link for url: ", url)
                 try:
                     async with session.get(url, headers=self.headers, timeout=5) as response:
                         if response.status == 200:
                             r_json = await response.json()
                             video_link = r_json['resultSets']['Meta']['videoUrls'][0]['lurl']
-                            desc = r_json['resultSets']['playlist'][0]['dsc']
                             async with lock:
                                 # add the link and description to event_ids
                                 # 1st part of loc filters rows, 2nd part is for columns
-                                event_ids.loc[event_ids['EVENTNUM'] == row.EVENTNUM, 'VIDEO_LINK'] = video_link
-                                event_ids.loc[event_ids['EVENTNUM'] == row.EVENTNUM, 'DESCRIPTION'] = desc
+                                event_ids.loc[event_ids['actionNumber'] == row.actionNumber, 'VIDEO_LINK'] = video_link
                                 self.counter += 1
                                 value = int((self.counter) / len(event_ids) * 100)
-                                update_progress_bar(value, "Get link for: {}".format(desc))
+                                update_progress_bar(value, "Get link for: {}".format(row.description))
                             print("Sleeping...")
                             await asyncio.sleep(random.uniform(0, 1.0))
                             return
                         elif response.status == 429:
-                            print(f"Rate limit exceeded for {row.EVENTNUM}. Retrying after a delay...")
+                            print(f"Rate limit exceeded for {row.actionNumber}. Retrying after a delay...")
                             error_msg_string += f"Retry {retry_count + 1} failed: Rate limit exceeded, Response Status: {response.status}\n"
                             await asyncio.sleep(random.uniform(3, 7))
                             # Retry the download after waiting
                             retry_count += 1
                         else:
-                            print(f"Failed to get link for {row.EVENTNUM}, Response Status: {response.status}")
+                            print(f"Failed to get link for {row.actionNumber}, Response Status: {response.status}")
                             error_msg_string += f"Retry {retry_count + 1} failed: Response Status: {response.status}\n"
                             retry_count += 1
                 except aiohttp.ClientConnectionError as e:
@@ -224,8 +318,8 @@ class DataRetriever:
                     print(f"Unexpected error: {e}")
                     error_msg_string += f"Try #{retry_count + 1} failed: Unexpected error.\n"
                     retry_count += 1
-        print(f"Max retries exceeded for {row.EVENTNUM}. Skipping.")
-        raise Exception(f"Max retries exceeded while getting link for event {row.EVENTNUM}: {row.HOMEDESCRIPTION}.\n\n{error_msg_string}")
+        print(f"Max retries exceeded for {row.actionNumber}. Skipping.")
+        raise Exception(f"Max retries exceeded while getting link for event {row.actionNumber}: {row.description}.\n\n{error_msg_string}")
         
     async def get_download_links_async(self, game_id, event_ids, update_progress_bar):
         """Creates a task for each event to fetch video download links and execute the tasks.
