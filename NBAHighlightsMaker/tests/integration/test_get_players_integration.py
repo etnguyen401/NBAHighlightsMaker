@@ -65,24 +65,23 @@ def test_get_game_log_integration(make_data):
     expected_columns = {'Game_ID', 'GAME_DATE', 'MATCHUP', 'WL', 'MIN', 'FGM', 'FGA', 'FTM', 'FTA', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'PTS'}
     assert expected_columns == set(game_log_df.columns), "The DataFrame should contain the expected columns."
 
-# playbyplayv2 from the nba_api library currently doesn't work, so this won't work either
 def test_get_event_ids_integration(make_data):
     _, data_retriever = make_data  
 
     # use kevin durant's player id
     game_id = "0022401088"
-    player_id = "201142"
-    boxes_checked = set()
-    boxes_checked.add(EventMsgType.FIELD_GOAL_MADE.value)
+    player_id = 201142
+    wanted_actions = {'2pt', '3pt'}
+    wanted_actions_options = {'Field Goals Made'}
 
     # call to get event ids
-    event_ids_df = data_retriever.get_event_ids(game_id, player_id, boxes_checked)
-    
+    event_ids_df = data_retriever.get_event_ids(game_id, player_id, wanted_actions, wanted_actions_options)
+    print(event_ids_df.head())
     # check that the size is exactly 5 fgm on this game
     assert len(event_ids_df) == 5, "The dataframe should be length 5."
 
     # check that the columns we need exist
-    expected_columns = {'EVENTNUM', 'EVENTMSGTYPE', 'HOMEDESCRIPTION', 'PLAYER1_ID', 'PLAYER2_ID', 'PLAYER3_ID', 'VIDEO_AVAILABLE_FLAG'}
+    expected_columns = {'actionNumber', 'actionType', 'subType', 'personId', 'description', 'shotResult', 'assistPersonId', 'foulDrawnPersonId', 'blockPersonId'}
     assert expected_columns == set(event_ids_df.columns), "The DataFrame should contain the expected columns."
 
 @pytest.mark.asyncio
@@ -94,13 +93,14 @@ async def test_get_download_link_integration(make_data):
 
     # make event_ids dataframe 
     event_ids = pd.DataFrame({
-            'EVENTNUM': [8],
-            'EVENTMSGTYPE': [1],
-            'HOMEDESCRIPTION': ["McDaniels 25' 3PT Jump Shot (3 PTS) (Randle 1 AST)"],
-            'PLAYER1_ID': [1630183],
-            'PLAYER2_ID': [203944],
-            'PLAYER3_ID': [0],
-            'VIDEO_AVAILABLE_FLAG': [1],
+            'actionNumber': [8],
+            'actionType': ['3pt'],
+            'subType': ['Jump Shot'],
+            'personId': [1630183],
+            'description': ["J. McDaniels 24' 3PT  (3 PTS) (J. Randle 1 AST)"],
+            'assistPersonId': [203944],
+            'foulDrawnPersonId': [""],
+            'blockPersonId': [""],
             'VIDEO_LINK': [""],
             'DESCRIPTION': [""],
     })
@@ -124,11 +124,9 @@ async def test_get_download_link_integration(make_data):
         # call to get download link
         await data_retriever.get_download_link(session, game_id, row, event_ids, update_progress_bar, semaphore, lock)
     
-    assert string == "Progress: 100%, Description: Get link for: McDaniels 25' 3PT Jump Shot (3 PTS) (Randle 1 AST)"
+    assert string == "Progress: 100%, Description: Get link for: J. McDaniels 24' 3PT  (3 PTS) (J. Randle 1 AST)"
 
     # check that we get a link
-    assert event_ids.loc[event_ids['EVENTNUM'] == 8, 'VIDEO_LINK'].values[0] != "", "The VIDEO_LINK should not be empty."
+    assert event_ids.loc[event_ids['actionNumber'] == 8, 'VIDEO_LINK'].values[0] != "", "The VIDEO_LINK should not be empty."
     
-    # check that we get a description
-    assert event_ids.loc[event_ids['EVENTNUM'] == 8, 'DESCRIPTION'].values[0] != "", "The DESCRIPTION should not be empty."
 

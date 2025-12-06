@@ -123,6 +123,7 @@ class DataRetriever:
                     - subType (str): More specific information about the event.
                     - personId (int): ID of the main player involved in the event.
                     - description (str): Description of the event.
+                    - shotResult (str): Result of the shot (i.e Made, Missed).
                     - assistPersonId (int): ID of the person who assisted the field goal.
                     - foulDrawnPersonId (int): ID of the person who drew the foul.
                     - blockPersonId (int): ID of the person who blocked the shot.
@@ -148,8 +149,8 @@ class DataRetriever:
                             secondary_col, secondary_col_val):
             """Helper function to filter unneeded rows based on chosen action types and secondary conditions.
             
-            There are situations where there are options for certain event types (e.g Field Goals Made/Missed),
-            a user could select only one of the options, so this function helps filter out the unwanted rows.
+            There are situations where there are options for certain event types (e.g Field Goals Made/Missed) where
+            and the user only selects one of the options. This function helps filter out the unwanted rows.
             
             Args:
                 action_1 (str): Primary action type to filter using.
@@ -198,42 +199,6 @@ class DataRetriever:
             ]
 
         return filtered_df
-    # def get_event_ids(self, game_id, player_id, boxes_checked):
-    #     """Retrieves events for a player in a specific game, filtered by event types desired by the user.
-
-    #     Args:
-    #         game_id (str): NBA game ID.
-    #         player_id (int): NBA player ID.
-    #         boxes_checked (set): List of event types that the user wants to see.
-
-    #     Returns:
-    #         pandas.DataFrame: DataFrame of filtered events with the following columns:
-    #             - EVENTNUM (int): Unique event number within the game.
-    #             - EVENTMSGTYPE (int): Type of event (i.e field goal, rebound).
-    #             - HOMEDESCRIPTION (str): Description of the event from the home team's perspective.
-    #             - PLAYER1_ID (int): ID of the first player involved in the event.
-    #             - PLAYER2_ID (int): ID of the second player involved in the event.
-    #             - PLAYER3_ID (int): ID of the third player involved in the event.
-    #             - VIDEO_AVAILABLE_FLAG (int): Represent if video is available for the event or not.
-
-    #     """
-    #     from nba_api.stats.endpoints import playbyplayv2
-    #     event_ids = playbyplayv2.PlayByPlayV2(game_id = game_id)
-    #     event_ids = event_ids.get_data_frames()[0]
-
-    #     event_ids = event_ids.loc[
-    #         (
-    #             (
-    #                 (event_ids['PLAYER1_ID'] == player_id) |
-    #                 (event_ids['PLAYER2_ID'] == player_id) |
-    #                 (event_ids['PLAYER3_ID'] == player_id)) &
-    #                 (event_ids['VIDEO_AVAILABLE_FLAG'] == 1) &
-    #                 (event_ids['EVENTMSGTYPE'].isin(boxes_checked)
-    #             )
-    #         ),
-    #         ['EVENTNUM', 'EVENTMSGTYPE', 'HOMEDESCRIPTION', 'PLAYER1_ID', 'PLAYER2_ID', 'PLAYER3_ID', 'VIDEO_AVAILABLE_FLAG']
-    #     ]
-    #     return event_ids
 
     async def get_download_link(self, session, game_id, row, event_ids, 
                                 update_progress_bar, semaphore, lock):
@@ -247,7 +212,7 @@ class DataRetriever:
         Args:
             session (aiohttp.ClientSession): A session object used for the HTTP requests.
             game_id (str): The NBA game ID specified.
-            row (pandas.Series): Row of data for the event containing EVENTNUM, etc.
+            row (pandas.Series): Row of data for the event containing actionNumber, etc.
             event_ids (pandas.DataFrame): DataFrame to update with video links and the description.
             update_progress_bar (Callable): Function to update the progress bar in the UI.
             semaphore (asyncio.Semaphore): Semaphore to limit concurrency.
@@ -335,19 +300,19 @@ class DataRetriever:
 
         Returns:
             pandas.DataFrame: DataFrame with the following columns:
-                - EVENTNUM (int): Unique event number for an event in the game.
-                - EVENTMSGTYPE (int): Type of event (i.e field goal, rebound).
-                - HOMEDESCRIPTION (str): Description of the event from the home team's perspective.
-                - PLAYER1_ID (int): ID of the first player involved in the event.
-                - PLAYER2_ID (int): ID of the second player involved in the event.
-                - PLAYER3_ID (int): ID of the third player involved in the event.
-                - VIDEO_AVAILABLE_FLAG (int): Represent if video is available for the event or not.
+                - actionNumber (int): Unique event number within the game.
+                - actionType (int): Type of event (i.e field goal, rebound).
+                - subType (str): More specific information about the event.
+                - personId (int): ID of the main player involved in the event.
+                - description (str): Description of the event.
+                - shotResult (str): Result of the shot (i.e Made, Missed).
+                - assistPersonId (int): ID of the person who assisted the field goal.
+                - foulDrawnPersonId (int): ID of the person who drew the foul.
+                - blockPersonId (int): ID of the person who blocked the shot.
                 - VIDEO_LINK (str): The download link for the event.
-                - DESCRIPTION (str): The description of the event, with both perspectives.
         """
         # make new columns for vid link and desc
         event_ids['VIDEO_LINK'] = ''
-        event_ids['DESCRIPTION'] = ''
         # limit the number of concurrent requests
         semaphore = asyncio.Semaphore(3)
         async with aiohttp.ClientSession(
