@@ -11,11 +11,17 @@ import pandas as pd
 def make_data(tmp_path_factory):
     """Makes a temporary directory for the session and cleans up after.
     """
-    # /tmp/pytest/data0
+
     data_dir = tmp_path_factory.mktemp('data')
 
-    ua = UserAgent(browsers=['Opera', 'Safari', 'Firefox'], platforms='desktop')
-    data_retriever = DataRetriever(ua, data_dir)
+    user_agents = [
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Safari/605.1.15',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Safari/605.1.15',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15',
+    ]
+    data_retriever = DataRetriever(user_agents, data_dir)
     
     return data_dir, data_retriever
 

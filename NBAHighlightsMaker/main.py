@@ -31,8 +31,6 @@ def startup():
     os.makedirs(os.path.join(data_dir, 'vids'), exist_ok=True)
     os.makedirs(os.path.join(data_dir, 'csv'), exist_ok=True)
     
-    # useragents from these browsers are more likely to succeed
-    #ua = UserAgent(browsers=['Opera', 'Safari', 'Firefox'], platforms='desktop')
     user_agents = [
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36',
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Safari/605.1.15',
@@ -40,6 +38,7 @@ def startup():
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Safari/605.1.15',
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15',
     ]
+    
     data_retriever = DataRetriever(user_agents, data_dir)
     
     downloader = Downloader(user_agents, data_dir)

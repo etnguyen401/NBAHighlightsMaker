@@ -127,16 +127,17 @@ class Downloader():
 
         Returns:
             pandas.DataFrame: DataFrame with the following columns:
-                - actionNumber (int): Unique event number for an event in the game.
-                - EVENTMSGTYPE (int): Type of event (i.e field goal, rebound).
-                - HOMEDESCRIPTION (str): Description of the event from the home team's perspective.
-                - PLAYER1_ID (int): ID of the first player involved in the event.
-                - PLAYER2_ID (int): ID of the second player involved in the event.
-                - PLAYER3_ID (int): ID of the third player involved in the event.
-                - VIDEO_AVAILABLE_FLAG (int): Represent if video is available for the event or not.
+                - actionNumber (int): Unique event number within the game.
+                - actionType (int): Type of event (i.e field goal, rebound).
+                - subType (str): More specific information about the event.
+                - personId (int): ID of the main player involved in the event.
+                - description (str): Description of the event.
+                - shotResult (str): Result of the shot (i.e Made, Missed).
+                - assistPersonId (int): ID of the person who assisted the field goal.
+                - foulDrawnPersonId (int): ID of the person who drew the foul.
+                - blockPersonId (int): ID of the person who blocked the shot.
                 - VIDEO_LINK (str): The download link for the event.
-                - DESCRIPTION (str): The description of the event, with both perspectives.
-                - FILE_PATH (str): The file path where the video will be saved at.
+                - FILE_PATH (str): The file path where the video is saved.
         """
         event_ids['FILE_PATH'] = ''
         event_ids = event_ids.reset_index(drop=True)
