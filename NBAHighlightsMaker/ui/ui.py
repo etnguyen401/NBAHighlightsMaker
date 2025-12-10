@@ -29,7 +29,7 @@ class HighlightsUI(QMainWindow):
         # x, y, width, height
         self.setGeometry(300, 300, 600, 700)
         self.setWindowTitle("NBAHighlightsMaker")
-        icon = QIcon("./resources/icon.png")
+        icon = QIcon("./resources/favicon.ico")
         self.setWindowIcon(icon)
         
         

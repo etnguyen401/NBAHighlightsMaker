@@ -16,9 +16,7 @@ dependencies = [
     "moviepy (==1.0.3)",
     "proglog (>=0.1.12,<0.2.0)",
     "aiohttp (>=3.11.18,<4.0.0)",
-    "fake-useragent (>=2.2.0,<3.0.0)",
     "aiofiles (>=24.1.0,<25.0.0)",
-    "psutil (>=7.0.0,<8.0.0)",
 ]
 
 [tool.poetry.group.dev.dependencies]
@@ -30,7 +28,7 @@ pyinstaller = "^6.17.0"
 poetry-pyinstaller-plugin = { version = ">=2.0.0,<3.0.0", extras = ["plugin"] }
 
 [tool.poetry-pyinstaller-plugin.targets]
-nba-highlights-maker = { source = "NBAHighlightsMaker/main.py", windowed = true }
+nba-highlights-maker = { source = "NBAHighlightsMaker/main.py", type = "onefile", windowed = true, icon = "../../../../resources/favicon.ico" }
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

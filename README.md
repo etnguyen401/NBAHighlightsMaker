@@ -30,9 +30,7 @@ actions (field goals, free throws, assists, etc..), and NBAHighlightsMaker will 
 - moviepy
 - proglog
 - aiohttp
-- fake-useragent
 - aiofiles
-- psutil
 
 ## Installation
 1. Clone the repository:

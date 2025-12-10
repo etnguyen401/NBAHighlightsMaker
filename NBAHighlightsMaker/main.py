@@ -11,7 +11,6 @@ Typical usage example:
 import os
 import sys
 import asyncio
-from fake_useragent import UserAgent
 from qasync import QEventLoop
 from NBAHighlightsMaker.players.getplayers import DataRetriever
 from NBAHighlightsMaker.downloader.downloader import Downloader
