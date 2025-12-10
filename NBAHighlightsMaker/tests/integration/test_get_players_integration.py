@@ -108,7 +108,6 @@ async def test_get_download_link_integration(make_data):
             'foulDrawnPersonId': [""],
             'blockPersonId': [""],
             'VIDEO_LINK': [""],
-            'DESCRIPTION': [""],
     })
 
     # get the one row of dataframe to download
