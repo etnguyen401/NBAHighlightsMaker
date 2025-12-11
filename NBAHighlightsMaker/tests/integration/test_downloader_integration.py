@@ -13,7 +13,7 @@ def make_data(tmp_path_factory):
     # /tmp/pytest/data0
     data_dir = tmp_path_factory.mktemp('data')
 
-    ua = UserAgent(browsers=['Opera', 'Safari', 'Firefox'], platforms='desktop')
+    ua = UserAgent(browsers=['Safari'], os = 'Mac OS X', platforms='desktop')
     downloader = Downloader(ua, data_dir)
     
     return data_dir, downloader

@@ -14,7 +14,7 @@ def make_data(tmp_path_factory):
 
     data_dir = tmp_path_factory.mktemp('data')
 
-    ua = UserAgent(browsers=['Opera', 'Safari', 'Firefox'], platforms='desktop')
+    ua = UserAgent(browsers=['Safari'], os = 'Mac OS X', platforms='desktop')
     data_retriever = DataRetriever(ua, data_dir)
     
     return data_dir, data_retriever
