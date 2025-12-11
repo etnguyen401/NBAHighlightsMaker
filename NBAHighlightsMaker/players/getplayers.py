@@ -18,16 +18,16 @@ class DataRetriever:
     events the user wants to see.
 
     Args:
-        user_agents (list): List of user agent strings to use for HTTP requests.
+        ua (UserAgent): UserAgent object from the fake_useragent library, used to generates random user agents.
         data_dir (str): Directory path for storing data files for future use.
     
     Attributes:
         headers (dict): HTTP headers used for requests to get video links.
-        user_agents (list): List of user agent strings to use for HTTP requests.
+        ua (UserAgent): UserAgent object from the fake_useragent library; used to generates random user agents.
         counter (int): Counter for tracking progress for getting links, used in progress bar UI.
         data_dir (str): Directory path for storing data files for future use.
     """
-    def __init__(self, user_agents, data_dir):
+    def __init__(self, ua, data_dir):
         self.headers = {
             'Host': 'stats.nba.com',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0',
@@ -41,7 +41,7 @@ class DataRetriever:
             'Pragma': 'no-cache',
             'Cache-Control': 'no-cache'
         }
-        self.user_agents = user_agents
+        self.ua = ua
         self.counter = 0
         self.data_dir = os.path.join(data_dir, 'csv')
 
@@ -226,7 +226,7 @@ class DataRetriever:
         while retry_count < 3:
             async with semaphore:
                 print(f"Retry count: {retry_count + 1}")
-                self.headers['User-Agent'] = random.choice(self.user_agents)
+                self.headers['User-Agent'] = self.ua.random
                 print("Headers: ", self.headers)
                 time = random.uniform(0, 2.0)
                 print(f"Sleeping for {time:.2f} seconds before getting link for {row.actionNumber}...")

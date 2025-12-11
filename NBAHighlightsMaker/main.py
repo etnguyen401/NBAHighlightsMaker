@@ -33,7 +33,7 @@ def startup():
     os.makedirs(os.path.join(data_dir, 'csv'), exist_ok=True)
     
     # useragents from these browsers are more likely to succeed
-    ua = UserAgent(browsers=['Opera', 'Safari', 'Firefox'], platforms='desktop')
+    ua = UserAgent(browsers=['Safari'], os = 'Mac OS X', platforms='desktop')
     
     data_retriever = DataRetriever(ua, data_dir)
     

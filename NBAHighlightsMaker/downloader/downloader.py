@@ -19,18 +19,18 @@ class Downloader():
     the file path of the downloaded video is updated in the dataframe.
 
     Args:
-        user_agents (list): List of user agent strings to use for HTTP requests.
+        ua (UserAgent): UserAgent object from fake_useragent to generate random user agent strings.
         data_dir (str): Directory path for storing data files for future use.
         
     Attributes:
-        user_agents (list): List of user agent strings to use for HTTP requests.
+        ua (UserAgent): UserAgent object from fake_useragent to generate random user agent strings.
         headers (dict): HTTP headers used for requests to download videos from the links.
         counter (int): Counter for tracking downloaded files.
     """
-    def __init__(self, user_agents, data_dir):
+    def __init__(self, ua, data_dir):
         self.data_dir = os.path.join(data_dir, 'vids')
         # UserAgent object to generate random user agent
-        self.user_agents = user_agents
+        self.ua = ua
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
         }
@@ -62,7 +62,7 @@ class Downloader():
         error_msg_string = ''
         while retry_count < 3:
             async with semaphore:
-                self.headers['User-Agent'] = random.choice(self.user_agents)
+                self.headers['User-Agent'] = self.ua.random
                 time = random.uniform(0, 2.5)
                 print(f"Sleeping for {time:.2f} seconds before downloading {row.actionNumber}.mp4...") 
                 await asyncio.sleep(time)
