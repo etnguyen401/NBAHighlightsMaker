@@ -19,18 +19,18 @@ class Downloader():
     the file path of the downloaded video is updated in the dataframe.
 
     Args:
-        ua (UserAgent): UserAgent object from fake_useragent to generate random user agent strings.
+        user_agents (list): List of user agent strings to use for HTTP requests.
         data_dir (str): Directory path for storing data files for future use.
         
     Attributes:
-        ua (UserAgent): UserAgent object from fake_useragent to generate random user agent strings.
+        user_agents (list): List of user agent strings to use for HTTP requests.
         headers (dict): HTTP headers used for requests to download videos from the links.
         counter (int): Counter for tracking downloaded files.
     """
-    def __init__(self, ua, data_dir):
+    def __init__(self, user_agents, data_dir):
         self.data_dir = os.path.join(data_dir, 'vids')
         # UserAgent object to generate random user agent
-        self.ua = ua
+        self.user_agents = user_agents
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
         }
@@ -62,7 +62,7 @@ class Downloader():
         error_msg_string = ''
         while retry_count < 3:
             async with semaphore:
-                self.headers['User-Agent'] = self.ua.random
+                self.headers['User-Agent'] = random.choice(self.user_agents)
                 time = random.uniform(0, 2.5)
                 print(f"Sleeping for {time:.2f} seconds before downloading {row.actionNumber}.mp4...") 
                 await asyncio.sleep(time)
@@ -127,16 +127,17 @@ class Downloader():
 
         Returns:
             pandas.DataFrame: DataFrame with the following columns:
-                - actionNumber (int): Unique event number for an event in the game.
-                - EVENTMSGTYPE (int): Type of event (i.e field goal, rebound).
-                - HOMEDESCRIPTION (str): Description of the event from the home team's perspective.
-                - PLAYER1_ID (int): ID of the first player involved in the event.
-                - PLAYER2_ID (int): ID of the second player involved in the event.
-                - PLAYER3_ID (int): ID of the third player involved in the event.
-                - VIDEO_AVAILABLE_FLAG (int): Represent if video is available for the event or not.
+                - actionNumber (int): Unique event number within the game.
+                - actionType (int): Type of event (i.e field goal, rebound).
+                - subType (str): More specific information about the event.
+                - personId (int): ID of the main player involved in the event.
+                - description (str): Description of the event.
+                - shotResult (str): Result of the shot (i.e Made, Missed).
+                - assistPersonId (int): ID of the person who assisted the field goal.
+                - foulDrawnPersonId (int): ID of the person who drew the foul.
+                - blockPersonId (int): ID of the person who blocked the shot.
                 - VIDEO_LINK (str): The download link for the event.
-                - DESCRIPTION (str): The description of the event, with both perspectives.
-                - FILE_PATH (str): The file path where the video will be saved at.
+                - FILE_PATH (str): The file path where the video is saved.
         """
         event_ids['FILE_PATH'] = ''
         event_ids = event_ids.reset_index(drop=True)
