@@ -157,7 +157,7 @@ class GameLogTable(QWidget):
             checkbox.setChecked(True)
             # don't set visibility immediately so it doesn't show as separate window
             if setVisible == False:
-                checkbox.setVisible(setVisible)
+                checkbox.setVisible(False)
             dict[label] = checkbox
             layout.addWidget(checkbox)
         
