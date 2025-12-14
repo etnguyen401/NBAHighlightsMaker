@@ -8,6 +8,8 @@ from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QLabel, QWidget
 from PySide6.QtGui import QIcon, QFont
 from NBAHighlightsMaker.ui.player_search import PlayerSearchBox
 from NBAHighlightsMaker.ui.game_log_table import GameLogTable
+import sys
+import os
 
 class HighlightsUI(QMainWindow):
     """Main window for the application.
@@ -29,9 +31,16 @@ class HighlightsUI(QMainWindow):
         # x, y, width, height
         self.setGeometry(300, 300, 600, 700)
         self.setWindowTitle("NBAHighlightsMaker")
-        icon = QIcon("./resources/favicon.ico")
+
+        icon_path = ""
+
+        if hasattr(sys, '_MEIPASS'):
+            icon_path = os.path.join(sys._MEIPASS, "resources", "favicon.ico")
+        else:
+            icon_path = "resources/favicon.ico"
+
+        icon = QIcon(icon_path)
         self.setWindowIcon(icon)
-        
         
         # set to vertical box layout
         self.layout = QVBoxLayout()

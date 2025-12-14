@@ -34,6 +34,7 @@ type = "onefile"
 windowed = true
 icon = "../../../../resources/favicon.ico"
 collect = {"data" = ["fake_useragent"] }
+include = {"resources/favicon.ico" = "resources" }
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
