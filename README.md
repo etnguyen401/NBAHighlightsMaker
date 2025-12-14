@@ -9,7 +9,7 @@ actions (field goals, free throws, assists, etc..), and NBAHighlightsMaker will 
 
 ![Step1](resources/step1.gif)
 
-2. Click on the row in the game log that corresponds to your desired game. The Create Video Button will be enabled. Click on it and your video will be created.
+2. Click on the row in the game log that corresponds to your desired game. The Create Video Button will be enabled. Choose whichever actions you want, click on the button and your video will start to be created.
 
 ![Step2](resources/step2.gif)
 

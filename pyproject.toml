@@ -30,6 +30,7 @@ poetry-pyinstaller-plugin = { version = ">=2.0.0,<3.0.0", extras = ["plugin"] }
 
 [tool.poetry-pyinstaller-plugin.targets.nba-highlights-maker]
 source = "NBAHighlightsMaker/main.py"
+add-version = true
 type = "onefile"
 windowed = true
 icon = "../../../../resources/favicon.ico"
