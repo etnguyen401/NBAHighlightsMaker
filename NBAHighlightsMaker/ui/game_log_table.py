@@ -293,7 +293,6 @@ class GameLogTable(QWidget):
         try:
             self.cancel_button.setEnabled(True)
             event_ids = await self.get_links_task
-            event_ids.to_csv('test.csv', index = False)
         except asyncio.CancelledError:
             print("Getting links was cancelled by user.")
             self.cleanup()
