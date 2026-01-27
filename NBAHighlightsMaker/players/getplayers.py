@@ -9,6 +9,7 @@ import random
 import pandas as pd
 import asyncio
 import aiohttp
+import json
 
 class DataRetriever:
     """Fetches NBA player data, game logs, and links for different clips.
@@ -100,7 +101,6 @@ class DataRetriever:
         
         # only get rows where video is available, and the specified columns
         game_log = game_log.loc[game_log['VIDEO_AVAILABLE'] == 1, ['Game_ID', 'GAME_DATE', 'MATCHUP', 'WL', 'MIN', 'FGM', 'FGA', 'FTM', 'FTA', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'PTS']]
-        
         # need to reset index after filtering, as pandas preserves old index
         # set drop = true so old index not put as column
         game_log = game_log.reset_index(drop = True)
@@ -129,77 +129,81 @@ class DataRetriever:
                     - blockPersonId (int): ID of the person who blocked the shot.
         """
         from nba_api.live.nba.endpoints import playbyplay
-        pbp = playbyplay.PlayByPlay(game_id=game_id)
-        df = pd.DataFrame(pbp.actions.get_dict())
-        # choose rows that have the selected actions and involve the specified player
-        # or are assists made by the player, only if assistes are wanted
-        # or are fouls drawn by the player, only if fouls are wanted
-        filtered_df = df.loc[
-        (
-            (df['actionType'].isin(wanted_actions)) & (df['personId'] == player_id)
-        )
-        |
-            ((df['assistPersonId'] == player_id) & ('assists' in (wanted_actions)))
-        |
-            ((df['foulDrawnPersonId'] == player_id) & ('foul' in (wanted_actions)))
-        , ['actionNumber', 'actionType', 'subType', 'personId', 'description', 'shotResult', 'assistPersonId', 'foulDrawnPersonId', 'blockPersonId']
-        ]
-
-        def filtering_helper(action_1, action_2, wanted_action_set, df, specified_action_vals, 
-                            secondary_col, secondary_col_val):
-            """Helper function to filter unneeded rows based on chosen action types and secondary conditions.
-            
-            There are situations where there are options for certain event types (e.g Field Goals Made/Missed) where
-            and the user only selects one of the options. This function helps filter out the unwanted rows.
-            
-            Args:
-                action_1 (str): Primary action type to filter using.
-                action_2 (str): Secondary action type to filter using.
-                wanted_action_set (set): Set of wanted actions.
-                df (pandas.DataFrame): DataFrame to filter.
-                specified_action_vals (set): Set of specific action values to filter using.
-                secondary_col (str): Secondary column that we use the value from to filter out either action_1 or action_2.
-                secondary_col_val (any): The value that we match so we can filter the row out.
-            
-            Returns:
-                pandas.DataFrame: Filtered DataFrame.
-            """
-            if action_1 in wanted_action_set and action_2 not in wanted_action_set:
-                df = df[
-                    ~((df['actionType'].isin(specified_action_vals)) & (df[secondary_col] == secondary_col_val))
-                ]
-            elif action_2 in wanted_action_set and action_1 not in wanted_action_set:
-                df = df[
-                    ~((df['actionType'].isin(specified_action_vals)) & (df[secondary_col] != secondary_col_val))
-                ]
-            return df
-        
-        # if field goal made checked only, filter out missed shots
-        # filter again for specific cases
-        # if field goal made checked, and field goal missed not checked, only keep made shots
-        # so select rows where it's a made shot or it's not a field goal attempt
-        filtered_df = filtering_helper('Field Goals Made', 'Field Goals Missed', wanted_action_options, filtered_df,
-                            {'2pt', '3pt'}, 'shotResult', 'Missed')
-        
-        # filter for fouls committed/drawn
-        # if fouls committed is checked and fouls drawn isn't
-        # only keep rows where the actionType is foul and the person who committed it isn't the player
-        filtered_df = filtering_helper('Fouls Drawn', 'Fouls Committed', wanted_action_options, filtered_df,
-                                    {'foul'}, 'personId', player_id)
-
-        # filter for free throws made/missed
-        filtered_df = filtering_helper('Free Throws Made', 'Free Throws Missed', wanted_action_options, filtered_df,
-                                        {'freethrow'}, 'shotResult', 'Missed')
-        
-        # avoid duplicates when there is an offensive foul
-        # select rows where it's not a turnover that has subtype offensive foul
-        if 'foul' in wanted_actions and 'turnover' in wanted_actions:
-            filtered_df = filtered_df[
-                ~((filtered_df['actionType'] == 'turnover') & (filtered_df['subType'] == 'offensive foul'))
+        try:
+            pbp = playbyplay.PlayByPlay(game_id=game_id)
+            df = pd.DataFrame(pbp.actions.get_dict())
+            # choose rows that have the selected actions and involve the specified player
+            # or are assists made by the player, only if assistes are wanted
+            # or are fouls drawn by the player, only if fouls are wanted
+            filtered_df = df.loc[
+            (
+                (df['actionType'].isin(wanted_actions)) & (df['personId'] == player_id)
+            )
+            |
+                ((df['assistPersonId'] == player_id) & ('assists' in (wanted_actions)))
+            |
+                ((df['foulDrawnPersonId'] == player_id) & ('foul' in (wanted_actions)))
+            , ['actionNumber', 'actionType', 'subType', 'personId', 'description', 'shotResult', 'assistPersonId', 'foulDrawnPersonId', 'blockPersonId']
             ]
 
-        return filtered_df
+            def filtering_helper(action_1, action_2, wanted_action_set, df, specified_action_vals, 
+                                secondary_col, secondary_col_val):
+                """Helper function to filter unneeded rows based on chosen action types and secondary conditions.
+                
+                There are situations where there are options for certain event types (e.g Field Goals Made/Missed) where
+                and the user only selects one of the options. This function helps filter out the unwanted rows.
+                
+                Args:
+                    action_1 (str): Primary action type to filter using.
+                    action_2 (str): Secondary action type to filter using.
+                    wanted_action_set (set): Set of wanted actions.
+                    df (pandas.DataFrame): DataFrame to filter.
+                    specified_action_vals (set): Set of specific action values to filter using.
+                    secondary_col (str): Secondary column that we use the value from to filter out either action_1 or action_2.
+                    secondary_col_val (any): The value that we match so we can filter the row out.
+                
+                Returns:
+                    pandas.DataFrame: Filtered DataFrame.
+                """
+                if action_1 in wanted_action_set and action_2 not in wanted_action_set:
+                    df = df[
+                        ~((df['actionType'].isin(specified_action_vals)) & (df[secondary_col] == secondary_col_val))
+                    ]
+                elif action_2 in wanted_action_set and action_1 not in wanted_action_set:
+                    df = df[
+                        ~((df['actionType'].isin(specified_action_vals)) & (df[secondary_col] != secondary_col_val))
+                    ]
+                return df
+            
+            # if field goal made checked only, filter out missed shots
+            # filter again for specific cases
+            # if field goal made checked, and field goal missed not checked, only keep made shots
+            # so select rows where it's a made shot or it's not a field goal attempt
+            filtered_df = filtering_helper('Field Goals Made', 'Field Goals Missed', wanted_action_options, filtered_df,
+                                {'2pt', '3pt'}, 'shotResult', 'Missed')
+            
+            # filter for fouls committed/drawn
+            # if fouls committed is checked and fouls drawn isn't
+            # only keep rows where the actionType is foul and the person who committed it isn't the player
+            filtered_df = filtering_helper('Fouls Drawn', 'Fouls Committed', wanted_action_options, filtered_df,
+                                        {'foul'}, 'personId', player_id)
 
+            # filter for free throws made/missed
+            filtered_df = filtering_helper('Free Throws Made', 'Free Throws Missed', wanted_action_options, filtered_df,
+                                            {'freethrow'}, 'shotResult', 'Missed')
+            
+            # avoid duplicates when there is an offensive foul
+            # select rows where it's not a turnover that has subtype offensive foul
+            if 'foul' in wanted_actions and 'turnover' in wanted_actions:
+                filtered_df = filtered_df[
+                    ~((filtered_df['actionType'] == 'turnover') & (filtered_df['subType'] == 'offensive foul'))
+                ]
+            return filtered_df
+        except json.JSONDecodeError:
+            raise
+        except Exception:
+            raise
+    
     async def get_download_link(self, session, game_id, row, event_ids, 
                                 update_progress_bar, semaphore, lock):
         """Asynchronously fetches the video download link and description for an event.

@@ -7,6 +7,7 @@ button is enabled, allowing the user to start the process of downloading all of 
 stitching them together to form one video. Once the process is completed, a pop-up will inform 
 the user that the video has been created and if they want to open it immediately.
 """
+import json
 import time
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QCheckBox, QPushButton, QTableWidget, QWidget, QTableWidgetItem, QMessageBox
@@ -268,16 +269,23 @@ class GameLogTable(QWidget):
         for action in self.action_type_boxes:
             if self.action_type_boxes[action].isChecked():
                 wanted_actions.add(action.lower())
-                print(f"Added {action.lower()} to wanted_actions")
 
         for action_option in self.action_options_boxes:
             if self.action_options_boxes[action_option].isChecked():
                 wanted_action_options.add(action_option)
-                print(f"Added {action_option} to wanted_action_options")
         
         # get all event ids relating to the player
-        event_ids = self.data_retriever.get_event_ids(self.game_id, self.player_id, wanted_actions, wanted_action_options)
-
+        try:
+            event_ids = self.data_retriever.get_event_ids(self.game_id, self.player_id, wanted_actions, wanted_action_options)
+        except json.JSONDecodeError as e:
+            self.cleanup()
+            QMessageBox.critical(self, "Error: JSON Decode Error", f"The Livepoint NBA api doesn't have data for this game, please try another game.\n")
+            return
+        except Exception as e:
+            self.cleanup()
+            QMessageBox.critical(self, "An error occurred while getting event IDs:", f"{e}\nPlease try creating the video again.")
+            return
+        
         # after filter, check if event_ids is empty
         # if empty, show error message to user and return
         if event_ids.empty:
