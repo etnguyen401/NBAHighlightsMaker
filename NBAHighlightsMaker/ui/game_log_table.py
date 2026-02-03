@@ -201,8 +201,6 @@ class GameLogTable(QWidget):
             option2.setEnabled(state)
         
         def action_type_listener():
-            #if type2 exists, and is checked, and you uncheck type1, don't do anything
-            #else if type2 exists, and is unchecked, and you uncheck type1, uncheck both options
             if type2:
                 if not type2.isChecked() and not type1.isChecked():
                     set_boxes(False)
