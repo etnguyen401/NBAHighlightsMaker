@@ -109,6 +109,17 @@ class GameLogTable(QWidget):
         self.action_options_boxes = {}
         self.create_checkboxes(action_options, self.action_options_boxes, self.layout_action_options_boxes, True)
 
+        self.create_checkbox_listeners(self.action_options_boxes["Field Goals Made"], 
+                                       self.action_options_boxes["Field Goals Missed"], 
+                                       self.action_type_boxes["2PT"],
+                                       self.action_type_boxes["3PT"])
+        self.create_checkbox_listeners(self.action_options_boxes["Fouls Committed"],
+                                        self.action_options_boxes["Fouls Drawn"],
+                                        self.action_type_boxes["Foul"])
+        self.create_checkbox_listeners(self.action_options_boxes["Free Throws Made"],
+                                        self.action_options_boxes["Free Throws Missed"],
+                                        self.action_type_boxes["Freethrow"])
+
         #make create video button
         self.create_video_button = QPushButton("Create Video")
         self.create_video_button.setEnabled(False)
@@ -156,12 +167,62 @@ class GameLogTable(QWidget):
         for label in labels:
             checkbox = QCheckBox(label)
             checkbox.setChecked(True)
-            # don't set visibility immediately so it doesn't show as separate window
             if setVisible == False:
                 checkbox.setVisible(False)
             dict[label] = checkbox
             layout.addWidget(checkbox)
+    
+    def create_checkbox_listeners(self, option1, option2, type1, type2=None):
+        """Creates listeners for both action_type and action_option checkboxes.
         
+        Listeners are created so the following behaviour happens:
+        When both action options are unchecked, uncheck its corresponding action type and disable the action options.
+        When an action type is unchecked, uncheck both its corresponding action options. If there is another type specified,
+        only uncheck both options if both types are unchecked.
+        When an action type is checked, check both its corresponding action options.
+
+        Args:
+            option1 (QCheckBox): First action option checkbox.
+            option2 (QCheckBox): Second action option checkbox.
+            type1 (QCheckBox): First action type checkbox corresponding to the two options.
+            type2 (QCheckBox, optional): Second action type checkbox corresponding to the two options. Defaults to None.
+        """
+        def action_option_listener():
+            if not option1.isChecked() and not option2.isChecked():
+                type1.setChecked(False)
+                if type2:
+                    type2.setChecked(False)
+        
+        def set_boxes(state):
+            option1.setChecked(state)
+            option2.setChecked(state)
+
+            option1.setEnabled(state)
+            option2.setEnabled(state)
+        
+        def action_type_listener():
+            #if type2 exists, and is checked, and you uncheck type1, don't do anything
+            #else if type2 exists, and is unchecked, and you uncheck type1, uncheck both options
+            if type2:
+                if not type2.isChecked() and not type1.isChecked():
+                    set_boxes(False)
+                elif type2.isChecked() or type1.isChecked():
+                    set_boxes(True)
+
+            else:
+                if not type1.isChecked():
+                    set_boxes(False)
+                else:
+                    set_boxes(True)
+        
+        if type2:
+            type2.stateChanged.connect(action_type_listener)
+        
+        type1.stateChanged.connect(action_type_listener)
+        option1.stateChanged.connect(action_option_listener)
+        option2.stateChanged.connect(action_option_listener)
+
+
     def update_progress_bar(self, value, description):
         """Updates the progress bar value and label with the specified value and description.
 
